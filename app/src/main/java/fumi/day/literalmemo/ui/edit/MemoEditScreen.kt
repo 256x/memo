@@ -1,0 +1,302 @@
+package fumi.day.literalmemo.ui.edit
+
+import android.widget.TextView
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.navigation.compose.hiltViewModel
+import fumi.day.literalmemo.data.prefs.AppFont
+import fumi.day.literalmemo.ui.theme.LocalAppTheme
+import io.noties.markwon.Markwon
+import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
+import io.noties.markwon.ext.tables.TablePlugin
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MemoEditScreen(
+    onNavigateBack: () -> Unit,
+    viewModel: MemoEditViewModel = hiltViewModel()
+) {
+    val content by viewModel.content.collectAsState()
+    val isPreviewMode by viewModel.isPreviewMode.collectAsState()
+    val currentFileName by viewModel.currentFileName.collectAsState()
+    val userPrefs by viewModel.userPrefs.collectAsState()
+    val appTheme = LocalAppTheme.current
+
+    var textFieldValue by remember { mutableStateOf(TextFieldValue(content)) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    // contentが外部から変更された時にtextFieldValueを更新
+    LaunchedEffect(content) {
+        if (textFieldValue.text != content) {
+            textFieldValue = TextFieldValue(content, TextRange(content.length))
+        }
+    }
+
+    val backgroundColor = if (appTheme.backgroundColor != Color.Unspecified) {
+        appTheme.backgroundColor
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+
+    val textColor = if (appTheme.textColor != Color.Unspecified) {
+        appTheme.textColor
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    // 画面が破棄される時に自動保存
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.save()
+        }
+    }
+
+    // システム戻るボタン/ジェスチャーでも保存
+    BackHandler {
+        viewModel.save()
+        onNavigateBack()
+    }
+
+    // 新規メモの場合、自動でフォーカスしてキーボードを表示
+    LaunchedEffect(isPreviewMode) {
+        if (!isPreviewMode) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = {
+                        viewModel.save()
+                        onNavigateBack()
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                title = { },
+                actions = {
+                    TextButton(onClick = { viewModel.togglePreviewMode() }) {
+                        Text(if (isPreviewMode) "Edit" else "Preview")
+                    }
+                    if (currentFileName != null) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        }
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .imePadding()
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .background(backgroundColor)
+            ) {
+                if (isPreviewMode) {
+                    MarkdownPreview(
+                        content = content,
+                        textColor = textColor,
+                        fontSize = appTheme.fontSize,
+                        fontFamily = userPrefs.font,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    BasicTextField(
+                        value = textFieldValue,
+                        onValueChange = {
+                            textFieldValue = it
+                            viewModel.updateContent(it.text)
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                            .verticalScroll(rememberScrollState())
+                            .focusRequester(focusRequester),
+                        textStyle = TextStyle(
+                            color = textColor,
+                            fontSize = appTheme.fontSize.sp,
+                            fontFamily = appTheme.fontFamily
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        decorationBox = { innerTextField ->
+                            Box {
+                                if (textFieldValue.text.isEmpty()) {
+                                    Text(
+                                        text = "Start writing...",
+                                        style = TextStyle(
+                                            color = textColor.copy(alpha = 0.5f),
+                                            fontSize = appTheme.fontSize.sp,
+                                            fontFamily = appTheme.fontFamily
+                                        )
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Markdown toolbar (only in edit mode)
+            if (!isPreviewMode) {
+                MarkdownToolbar(
+                    onActionClick = { action ->
+                        textFieldValue = applyToolbarAction(textFieldValue, action)
+                        viewModel.updateContent(textFieldValue.text)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete memo?") },
+            text = { Text("This memo will be moved to trash.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteMemo(onNavigateBack)
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+private fun applyToolbarAction(textFieldValue: TextFieldValue, action: ToolbarAction): TextFieldValue {
+    val text = textFieldValue.text
+    val selection = textFieldValue.selection
+    val start = selection.min
+    val end = selection.max
+    val selectedText = text.substring(start, end)
+
+    return if (action.isLinePrefix) {
+        // 行頭に挿入するタイプ
+        val lineStart = text.lastIndexOf('\n', start - 1) + 1
+        val newText = text.substring(0, lineStart) + action.prefix + text.substring(lineStart)
+        val newCursorPos = start + action.prefix.length
+        TextFieldValue(newText, TextRange(newCursorPos))
+    } else {
+        // 選択範囲を囲むタイプ
+        val newText = text.substring(0, start) + action.prefix + selectedText + action.suffix + text.substring(end)
+        val newCursorPos = if (selectedText.isEmpty()) {
+            start + action.prefix.length
+        } else {
+            start + action.prefix.length + selectedText.length + action.suffix.length
+        }
+        TextFieldValue(newText, TextRange(newCursorPos))
+    }
+}
+
+@Composable
+private fun MarkdownPreview(
+    content: String,
+    textColor: Color,
+    fontSize: Float,
+    fontFamily: AppFont,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    val markwon = remember(context) {
+        Markwon.builder(context)
+            .usePlugin(StrikethroughPlugin.create())
+            .usePlugin(TablePlugin.create(context))
+            .build()
+    }
+
+    val textColorInt = textColor.toArgb()
+
+    AndroidView(
+        factory = { ctx ->
+            TextView(ctx).apply {
+                setTextColor(textColorInt)
+                textSize = fontSize
+                setPadding(48, 48, 48, 48)
+                layoutParams = android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                when (fontFamily) {
+                    AppFont.SERIF -> typeface = android.graphics.Typeface.SERIF
+                    AppFont.MONOSPACE -> typeface = android.graphics.Typeface.MONOSPACE
+                    AppFont.DEFAULT -> typeface = android.graphics.Typeface.DEFAULT
+                }
+            }
+        },
+        update = { textView ->
+            textView.setTextColor(textColorInt)
+            textView.textSize = fontSize
+            markwon.setMarkdown(textView, content)
+        },
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+    )
+}
