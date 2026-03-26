@@ -8,6 +8,13 @@ A minimalist text-based note app with Git sync.
   <a href="https://github.com/256x/memo/releases/latest"><img src="https://img.shields.io/github/v/release/256x/memo?label=GitHub%20Release"></a>&nbsp;<img src="https://img.shields.io/badge/Android-8%2B-blue">&nbsp;<img src="https://img.shields.io/badge/license-MIT-lightgrey">
 </p>
 
+<p>
+  <img src="https://github.com/user-attachments/assets/15ec5bf8-812e-460a-8ee8-fe8189b70650" width="180" />
+  <img src="https://github.com/user-attachments/assets/4081ba6f-22f6-44db-85aa-f6357fbed887" width="180" />
+  <img src="https://github.com/user-attachments/assets/539c1894-619f-4801-9947-97e834d2cdee" width="180" />
+  <img src="https://github.com/user-attachments/assets/3e789a4c-66c9-4da5-9562-2f71764aa9ed" width="180" />
+</p>
+
 [User Guide](./docs/USER_GUIDE.md)
 
 ## Why?
