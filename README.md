@@ -113,3 +113,14 @@ Built with Kotlin and Jetpack Compose.
 ## License
 
 MIT
+
+## PC Scripts
+
+A simple script to create a new memo from terminal:
+```bash
+#!/bin/bash
+cd "$(dirname "$0")/../pile" || exit 1
+nvim "$(date -u +%Y%m%d_%H%M%S).md"
+```
+
+See `scripts/new-memo.sh`. Tweak it however you like — you know what you're doing.
