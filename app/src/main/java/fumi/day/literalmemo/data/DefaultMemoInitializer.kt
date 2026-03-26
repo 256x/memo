@@ -26,9 +26,15 @@ class DefaultMemoInitializer @Inject constructor(
 
         try {
             val assetManager = context.assets
-            val defaultMemos = assetManager.list("default_memos") ?: return
+            val baseTime = System.currentTimeMillis()
+            
+            val orderedFiles = listOf(
+                "README.md" to 0L,
+                "User_Guide.md" to -1000L,
+                "Markdown_Guide.md" to -2000L
+            )
 
-            for (fileName in defaultMemos) {
+            for ((fileName, offset) in orderedFiles) {
                 val targetFile = File(pileDir, fileName)
                 if (!targetFile.exists()) {
                     assetManager.open("default_memos/$fileName").use { input ->
@@ -36,12 +42,12 @@ class DefaultMemoInitializer @Inject constructor(
                             input.copyTo(output)
                         }
                     }
+                    targetFile.setLastModified(baseTime + offset)
                 }
             }
 
             prefs.edit { putBoolean("default_memos_copied", true) }
         } catch (e: Exception) {
-            // Ignore errors - not critical
         }
     }
 }

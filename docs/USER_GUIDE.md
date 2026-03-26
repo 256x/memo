@@ -1,86 +1,96 @@
-# Literal Memo - User Guide
+# User Guide
 
-This guide explains how to use Literal Memo.
+## Getting Started
 
-## 1. Creating a Memo
+1. Open the app
+2. Tap + to create a note
+3. Write anything
+4. Press back to save
 
-Tap the **+** button at the bottom right of the memo list.
+That's it.
 
-- A new memo opens in **Edit mode** with the keyboard ready.
-- Start writing. Your memo is saved automatically when you leave.
+## Search
 
-## 2. Memo List
+Type in the search bar at the bottom. Press Enter.
 
-The main screen shows all your memos, sorted by last modified date.
+Results show matching notes with highlighted snippets.
 
-- **Tap**: Open the memo in Preview mode.
-- **Swipe Left**: Move the memo to Trash.
+Press back to clear the search.
 
-## 3. Search
+## Deletion
 
-Type in the search bar at the bottom and press **Enter** to search.
+Swipe left on any note to delete.
 
-- Search covers the entire content of your memos.
-- Press the back button or clear the search to show all memos.
+Deleted notes move to `trash/`. They're gone from the app, but still exist in your repo.
 
-## 4. Editing
+There is no restore UI. If you need something back, access your repo directly.
 
-When viewing a memo:
-
-- **Tap "Edit"**: Switch to Edit mode.
-- **Tap "Preview"**: Switch back to Preview mode.
-- **Markdown Toolbar**: Use the toolbar at the bottom to insert Markdown syntax.
-  - Select text and tap a button to wrap it (e.g., bold, italic).
-  - Tap without selection to insert at cursor position.
-
-## 5. Deleting
-
-- **From List**: Swipe left on a memo to move it to Trash.
-- **From Edit Screen**: Tap the trash icon in the top right.
-
-## 6. Trash
-
-Access Trash from **Settings → View Trash**.
-
-- **Restore**: Bring a memo back to the main list.
-- **Delete**: Permanently remove a memo.
-- **Empty Trash**: Delete all trashed memos at once.
-
-## 7. GitHub Sync
-
-Sync your memos to a GitHub repository for backup and cross-device access.
+## GitHub Sync
 
 ### Setup
 
-1. Go to **Settings**.
-2. Tap **Connect** under GitHub Sync.
-3. Enter your **Personal Access Token** (with `repo` scope) and **Repository** (format: `owner/repo`).
+1. Go to Settings
+2. Tap "Connect GitHub"
+3. Enter your Personal Access Token (with `repo` scope)
+4. Enter your repository name (e.g., `username/notes`)
 
-### How It Works
+### Usage
 
-- **Sync Now**: Manually sync your memos.
-- Active memos are stored in `pile/filename.md`.
-- Trashed memos are stored as `pile/.filename.md` (hidden files).
-- You can add or edit `.md` files directly on GitHub — they will download on the next sync.
+- Tap the sync icon to sync manually
+- Sync pulls remote changes and pushes local changes
+- Edits: last write wins
+- Deletions: delete wins
 
-### Permanent Delete
+### Repository Structure
 
-When you permanently delete a memo, it is removed from both your device and GitHub.
+```
+repo/
+├── pile/
+│   ├── 20260326_120000.md
+│   └── 20260326_130000.md
+└── trash/
+    └── 20260326_110000.md
+```
 
-## 8. Settings
+### Multi-device Usage
 
-### Appearance
+- Sync before editing on a new device
+- Don't edit the same note on multiple devices simultaneously
+- Deletion propagates to all devices
 
-- **Font**: Choose Default, Serif, or Monospace.
-- **Size**: Adjust text size with the slider.
-- **Colors**: Tap BG, Text, or Accent to customize colors.
+### PC Usage
 
-### GitHub Sync
+Edit notes directly:
 
-- **Sync Now**: Trigger a manual sync.
-- **Edit**: Change your token or repository.
-- **Disconnect**: Remove GitHub connection.
+```
+git pull
+# edit files in pile/
+git add . && git commit -m "update" && git push
+```
 
----
+Permanently delete:
 
-*Memos are saved with timestamp filenames (e.g., `20260324_143000.md`).*
+```
+rm trash/old_note.md
+git add . && git commit -m "cleanup" && git push
+```
+
+Recover a deleted note:
+
+```
+cp trash/note.md pile/$(date +%Y%m%d_%H%M%S).md
+git add . && git commit -m "recover" && git push
+```
+
+## Customization
+
+- **Font**: Default, Serif, or Monospace
+- **Size**: 12sp to 24sp
+- **Colors**: Background, Text, Accent
+
+## Tips
+
+- Write short notes. One idea per note.
+- Use descriptive first lines — they become titles.
+- Search is your friend. Don't organize.
+- Sync often on multiple devices.

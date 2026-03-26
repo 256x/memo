@@ -1,6 +1,5 @@
 package fumi.day.literalmemo.ui.settings
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,16 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -65,18 +60,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import fumi.day.literalmemo.BuildConfig
 import fumi.day.literalmemo.data.prefs.AppFont
-import fumi.day.literalmemo.domain.model.Memo
-import fumi.day.literalmemo.domain.model.firstLine
 import fumi.day.literalmemo.ui.theme.LocalAppTheme
 import fumi.day.literalmemo.ui.theme.parseColor
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,15 +75,12 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val userPrefs by viewModel.userPrefs.collectAsState()
-    val trashedMemos by viewModel.trashedMemos.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val syncResult by viewModel.syncResult.collectAsState()
-    val isDeletingFromRemote by viewModel.isDeletingFromRemote.collectAsState()
     val appTheme = LocalAppTheme.current
 
     var showColorPicker by remember { mutableStateOf<ColorPickerTarget?>(null) }
     var showGitHubDialog by remember { mutableStateOf(false) }
-    var showTrashDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -147,14 +133,6 @@ fun SettingsScreen(
                 onDisconnectClick = viewModel::disconnectGitHub
             )
 
-            TrashCard(
-                gitHubEnabled = userPrefs.gitHubEnabled,
-                onViewTrashClick = {
-                    viewModel.loadTrashedMemos()
-                    showTrashDialog = true
-                }
-            )
-
             Text(
                 text = "Literal Memo v${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,
@@ -193,19 +171,6 @@ fun SettingsScreen(
                 showGitHubDialog = false
             },
             onDismiss = { showGitHubDialog = false }
-        )
-    }
-
-    if (showTrashDialog) {
-        TrashDialog(
-            trashedMemos = trashedMemos,
-            accentColor = appTheme.accentColor,
-            gitHubEnabled = userPrefs.gitHubEnabled,
-            isDeleting = isDeletingFromRemote,
-            onRestore = viewModel::restoreMemo,
-            onDelete = viewModel::deletePermanently,
-            onEmptyTrash = viewModel::emptyTrash,
-            onDismiss = { showTrashDialog = false }
         )
     }
 }
@@ -547,7 +512,7 @@ private fun GitHubSyncCard(
                     Spacer(modifier = Modifier.height(8.dp))
                     if (result.errors.isEmpty()) {
                         Text(
-                            text = "↑${result.uploaded}  ↓${result.downloaded}  ×${result.deleted}",
+                            text = "↑${result.uploaded} ↓${result.downloaded}",
                             style = MaterialTheme.typography.bodySmall
                         )
                     } else {
@@ -608,262 +573,4 @@ private fun GitHubSettingsDialog(
             }
         }
     )
-}
-
-@Composable
-private fun TrashCard(
-    gitHubEnabled: Boolean,
-    onViewTrashClick: () -> Unit
-) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "Trash",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = if (gitHubEnabled) {
-                    "Deleted memos are moved to trash and synced to GitHub as hidden files."
-                } else {
-                    "Deleted memos are moved to trash. Empty trash to permanently delete them."
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                onClick = onViewTrashClick,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("View Trash")
-            }
-        }
-    }
-}
-
-@Composable
-private fun TrashDialog(
-    trashedMemos: List<Memo>,
-    accentColor: Color,
-    gitHubEnabled: Boolean,
-    isDeleting: Boolean,
-    onRestore: (String) -> Unit,
-    onDelete: (String) -> Unit,
-    onEmptyTrash: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    var selectedMemo by remember { mutableStateOf<Memo?>(null) }
-    var memoToDelete by remember { mutableStateOf<String?>(null) }
-    var showEmptyTrashConfirm by remember { mutableStateOf(false) }
-
-    // 単体削除の確認ダイアログ
-    memoToDelete?.let { fileName ->
-        AlertDialog(
-            onDismissRequest = { memoToDelete = null },
-            title = { Text("Delete permanently?") },
-            text = {
-                Text(
-                    if (gitHubEnabled) {
-                        "This memo will be permanently deleted from both local and GitHub. This action cannot be undone."
-                    } else {
-                        "This memo will be permanently deleted. This action cannot be undone."
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete(fileName)
-                        memoToDelete = null
-                    }
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { memoToDelete = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // Empty Trash の確認ダイアログ
-    if (showEmptyTrashConfirm) {
-        AlertDialog(
-            onDismissRequest = { showEmptyTrashConfirm = false },
-            title = { Text("Empty trash?") },
-            text = {
-                Text(
-                    if (gitHubEnabled) {
-                        "All ${trashedMemos.size} memos in trash will be permanently deleted from both local and GitHub. This action cannot be undone."
-                    } else {
-                        "All ${trashedMemos.size} memos in trash will be permanently deleted. This action cannot be undone."
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onEmptyTrash()
-                        showEmptyTrashConfirm = false
-                    }
-                ) {
-                    Text("Delete All", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEmptyTrashConfirm = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    AlertDialog(
-        onDismissRequest = { if (!isDeleting) onDismiss() },
-        title = { Text("Trash") },
-        text = {
-            Column {
-                if (isDeleting) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(
-                            text = if (gitHubEnabled) "Deleting from local & GitHub..." else "Deleting...",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-
-                if (trashedMemos.isEmpty()) {
-                    Text(
-                        text = "Trash is empty",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.height(300.dp)
-                    ) {
-                        items(trashedMemos) { memo ->
-                            val isSelected = selectedMemo == memo
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(enabled = !isDeleting) {
-                                        selectedMemo = if (isSelected) null else memo
-                                    }
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = memo.firstLine(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = formatDate(memo.updatedAt),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = { onRestore(memo.fileName) },
-                                        enabled = !isDeleting
-                                    ) {
-                                        Icon(
-                                            Icons.Default.RestoreFromTrash,
-                                            contentDescription = "Restore",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = { memoToDelete = memo.fileName },
-                                        enabled = !isDeleting
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "Delete",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                AnimatedVisibility(visible = isSelected) {
-                                    Text(
-                                        text = memo.content,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 5,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(bottom = 8.dp)
-                                            .background(
-                                                MaterialTheme.colorScheme.surfaceVariant,
-                                                RoundedCornerShape(4.dp)
-                                            )
-                                            .padding(8.dp)
-                                    )
-                                }
-
-                                HorizontalDivider()
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = { showEmptyTrashConfirm = true },
-                        enabled = !isDeleting,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = accentColor
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Empty Trash", color = Color.White)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = !isDeleting
-            ) {
-                Text("Close")
-            }
-        }
-    )
-}
-
-private fun formatDate(timestamp: Long): String {
-    val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-    return formatter.format(Date(timestamp))
 }

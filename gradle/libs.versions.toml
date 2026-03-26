@@ -32,6 +32,7 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
 markwon-strikethrough = { group = "io.noties.markwon", name = "ext-strikethrough", version.ref = "markwon" }
 markwon-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markwon" }
+markwon-tasklist = { group = "io.noties.markwon", name = "ext-tasklist", version.ref = "markwon" }
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version = "1.2.1" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version = "3.6.1" }

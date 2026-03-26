@@ -52,6 +52,7 @@ import fumi.day.literalmemo.ui.theme.LocalAppTheme
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import io.noties.markwon.ext.tables.TablePlugin
+import io.noties.markwon.ext.tasklist.TaskListPlugin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +71,6 @@ fun MemoEditScreen(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    // contentが外部から変更された時にtextFieldValueを更新
     LaunchedEffect(content) {
         if (textFieldValue.text != content) {
             textFieldValue = TextFieldValue(content, TextRange(content.length))
@@ -89,20 +89,17 @@ fun MemoEditScreen(
         MaterialTheme.colorScheme.onSurface
     }
 
-    // 画面が破棄される時に自動保存
     DisposableEffect(Unit) {
         onDispose {
             viewModel.save()
         }
     }
 
-    // システム戻るボタン/ジェスチャーでも保存
     BackHandler {
         viewModel.save()
         onNavigateBack()
     }
 
-    // 新規メモの場合、自動でフォーカスしてキーボードを表示
     LaunchedEffect(isPreviewMode) {
         if (!isPreviewMode) {
             focusRequester.requestFocus()
@@ -192,7 +189,6 @@ fun MemoEditScreen(
                 }
             }
 
-            // Markdown toolbar (only in edit mode)
             if (!isPreviewMode) {
                 MarkdownToolbar(
                     onActionClick = { action ->
@@ -205,12 +201,11 @@ fun MemoEditScreen(
         }
     }
 
-    // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete memo?") },
-            text = { Text("This memo will be moved to trash.") },
+            title = { Text("Delete?") },
+            text = { Text("This memo will be deleted.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -238,13 +233,11 @@ private fun applyToolbarAction(textFieldValue: TextFieldValue, action: ToolbarAc
     val selectedText = text.substring(start, end)
 
     return if (action.isLinePrefix) {
-        // 行頭に挿入するタイプ
         val lineStart = text.lastIndexOf('\n', start - 1) + 1
         val newText = text.substring(0, lineStart) + action.prefix + text.substring(lineStart)
         val newCursorPos = start + action.prefix.length
         TextFieldValue(newText, TextRange(newCursorPos))
     } else {
-        // 選択範囲を囲むタイプ
         val newText = text.substring(0, start) + action.prefix + selectedText + action.suffix + text.substring(end)
         val newCursorPos = if (selectedText.isEmpty()) {
             start + action.prefix.length
@@ -264,15 +257,15 @@ private fun MarkdownPreview(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val textColorInt = textColor.toArgb()
 
     val markwon = remember(context) {
         Markwon.builder(context)
             .usePlugin(StrikethroughPlugin.create())
             .usePlugin(TablePlugin.create(context))
+            .usePlugin(TaskListPlugin.create(context))
             .build()
     }
-
-    val textColorInt = textColor.toArgb()
 
     AndroidView(
         factory = { ctx ->
@@ -284,19 +277,18 @@ private fun MarkdownPreview(
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT
                 )
-                when (fontFamily) {
-                    AppFont.SERIF -> typeface = android.graphics.Typeface.SERIF
-                    AppFont.MONOSPACE -> typeface = android.graphics.Typeface.MONOSPACE
-                    AppFont.DEFAULT -> typeface = android.graphics.Typeface.DEFAULT
-                }
             }
         },
         update = { textView ->
             textView.setTextColor(textColorInt)
             textView.textSize = fontSize
+            textView.typeface = when (fontFamily) {
+                AppFont.SERIF -> android.graphics.Typeface.SERIF
+                AppFont.MONOSPACE -> android.graphics.Typeface.MONOSPACE
+                AppFont.DEFAULT -> android.graphics.Typeface.DEFAULT
+            }
             markwon.setMarkdown(textView, content)
         },
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
+        modifier = modifier.verticalScroll(rememberScrollState())
     )
 }

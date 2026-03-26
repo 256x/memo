@@ -1,51 +1,48 @@
 # Markdown Guide
 
-## Headings
+## Headers
 
-# H1 Heading
-## H2 Heading  
-### H3 Heading
+# H1
+## H2
+### H3
 
-## Text Formatting
+## Emphasis
 
-**bold** or __bold__
 *italic* or _italic_
+**bold** or __bold__
 ~~strikethrough~~
-`inline code`
 
 ## Lists
 
-- Bullet item 1
-- Bullet item 2
+- Item 1
+- Item 2
   - Nested item
 
-1. Numbered item 1
-2. Numbered item 2
+1. First
+2. Second
+3. Third
 
-- [ ] Checkbox
-- [x] Completed
+## Links
 
-## Blockquote
+[Link text](https://example.com)
+
+## Code
+
+Inline `code` with backticks.
+```
+Code block
+with multiple lines
+```
+
+## Blockquotes
 
 > This is a quote.
-> Multiple lines work too.
-
-## Code Block
-```
-code block
-multiple lines
-```
 
 ## Horizontal Rule
 
 ---
 
-## Link
+## Checklist
 
-[Link text](https://example.com)
-
-## Table
-
-| Left   | Center | Right |
-|:-------|:------:|------:|
-| A      |   B    |     C |
+- [ ] Task 1
+- [x] Task 2 (done)

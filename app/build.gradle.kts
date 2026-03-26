@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.markwon.core)
     implementation(libs.markwon.strikethrough)
     implementation(libs.markwon.tables)
+    implementation(libs.markwon.tasklist)
 
     // Testing
     testImplementation(libs.junit)

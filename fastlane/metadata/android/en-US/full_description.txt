@@ -1,0 +1,15 @@
+Literal Memo is a minimalist file-based Markdown note-taking app inspired by howm.
+
+Notes are stored as plain .md files, not in a database. Sync them to any GitHub repository for backup and cross-device access.
+
+Features:
+
+- File-Based: Notes are portable .md files. No lock-in.
+- Markdown Preview: Write in Markdown, preview with formatting.
+- GitHub Sync: Sync to a GitHub repository. Edit from PC or any device.
+- Customization: Change colors, font, and size.
+- Trash Management: Restore or permanently delete anytime.
+
+GitHub Sync stores active memos in pile/filename.md and trashed memos as pile/.filename.md. You can add or edit files directly on GitHub.
+
+Literal Memo is for people who want a simple, distraction-free note-taking app with plain text files and Git-friendly sync.

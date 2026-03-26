@@ -27,6 +27,10 @@ class MemoRepositoryImpl @Inject constructor(
         File(context.filesDir, "pile").also { it.mkdirs() }
     }
 
+    private val trashDir: File by lazy {
+        File(context.filesDir, "trash").also { it.mkdirs() }
+    }
+
     private val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
@@ -48,30 +52,14 @@ class MemoRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun getAllMemoFiles(): List<File> {
-        return pileDir.listFiles()
-            ?.filter { it.isFile && it.name.endsWith(".md") }
-            ?: emptyList()
-    }
-
     override fun observeAll(): Flow<List<Memo>> = flow {
         while (true) {
-            val memos = getAllMemoFiles()
-                .filter { !it.name.startsWith(".") }
-                .mapNotNull { it.toMemo() }
-                .sortedByDescending { it.updatedAt }
+            val memos = pileDir.listFiles()
+                ?.filter { it.isFile && it.name.endsWith(".md") }
+                ?.mapNotNull { it.toMemo() }
+                ?.sortedByDescending { it.updatedAt }
+                ?: emptyList()
             emit(memos)
-            delay(1000) // Poll every 1 second
-        }
-    }.flowOn(Dispatchers.IO)
-
-    override fun observeTrash(): Flow<List<Memo>> = flow {
-        while (true) {
-            val trashedMemos = getAllMemoFiles()
-                .filter { it.name.startsWith(".") }
-                .mapNotNull { it.toMemo() }
-                .sortedByDescending { it.updatedAt }
-            emit(trashedMemos)
             delay(1000)
         }
     }.flowOn(Dispatchers.IO)
@@ -88,24 +76,10 @@ class MemoRepositoryImpl @Inject constructor(
 
     override suspend fun trash(fileName: String) = withContext(Dispatchers.IO) {
         val file = File(pileDir, fileName)
-        if (file.exists() && !fileName.startsWith(".")) {
-            val trashedFile = File(pileDir, ".$fileName")
+        if (file.exists()) {
+            val trashedFile = File(trashDir, fileName)
             file.renameTo(trashedFile)
         }
-    }
-
-    override suspend fun restore(fileName: String) = withContext(Dispatchers.IO) {
-        if (fileName.startsWith(".")) {
-            val file = File(pileDir, fileName)
-            if (file.exists()) {
-                val restoredFile = File(pileDir, fileName.removePrefix("."))
-                file.renameTo(restoredFile)
-            }
-        }
-    }
-
-    override suspend fun deletePermanently(fileName: String): Unit = withContext(Dispatchers.IO) {
-        File(pileDir, fileName).delete()
     }
 
     override fun search(query: String): Flow<List<Memo>> {
@@ -119,5 +93,4 @@ class MemoRepositoryImpl @Inject constructor(
             }
         }
     }
-
 }

@@ -58,40 +58,17 @@ class GitHubRepository @Inject constructor() {
         }
     }
 
-    suspend fun listFiles(token: String, repo: String): Result<List<GitHubFile>> {
-        return try {
-            val url = "$baseUrl/repos/$repo/contents/pile"
-            val (code, body) = makeRequest("GET", url, token)
-
-            when (code) {
-                200 -> {
-                    val files = mutableListOf<GitHubFile>()
-                    val array = JSONArray(body)
-                    for (i in 0 until array.length()) {
-                        val obj = array.getJSONObject(i)
-                        val name = obj.getString("name")
-                        if (name.endsWith(".md") && !name.startsWith(".")) {
-                            files.add(
-                                GitHubFile(
-                                    path = obj.getString("path"),
-                                    sha = obj.getString("sha")
-                                )
-                            )
-                        }
-                    }
-                    Result.success(files)
-                }
-                404 -> Result.success(emptyList()) // pile directory doesn't exist yet
-                else -> Result.failure(Exception("Failed to list files: $code"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    suspend fun listPileFiles(token: String, repo: String): Result<List<GitHubFile>> {
+        return listFilesInDir(token, repo, "pile")
     }
 
-    suspend fun listTrashedFiles(token: String, repo: String): Result<List<GitHubFile>> {
+    suspend fun listTrashFiles(token: String, repo: String): Result<List<GitHubFile>> {
+        return listFilesInDir(token, repo, "trash")
+    }
+
+    private suspend fun listFilesInDir(token: String, repo: String, dir: String): Result<List<GitHubFile>> {
         return try {
-            val url = "$baseUrl/repos/$repo/contents/pile"
+            val url = "$baseUrl/repos/$repo/contents/$dir"
             val (code, body) = makeRequest("GET", url, token)
 
             when (code) {
@@ -101,7 +78,7 @@ class GitHubRepository @Inject constructor() {
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
                         val name = obj.getString("name")
-                        if (name.endsWith(".md") && name.startsWith(".")) {
+                        if (name.endsWith(".md")) {
                             files.add(
                                 GitHubFile(
                                     path = obj.getString("path"),
@@ -113,7 +90,7 @@ class GitHubRepository @Inject constructor() {
                     Result.success(files)
                 }
                 404 -> Result.success(emptyList())
-                else -> Result.failure(Exception("Failed to list trashed files: $code"))
+                else -> Result.failure(Exception("Failed to list files in $dir: $code"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -211,26 +188,19 @@ class GitHubRepository @Inject constructor() {
         }
     }
 
-    suspend fun trashMemo(
+    suspend fun moveToTrash(
         token: String,
         repo: String,
-        path: String,
+        fileName: String,
         sha: String,
         content: String
     ): Result<Unit> {
         return try {
-            // Delete original file
-            deleteFile(token, repo, path, sha, "Trash $path").getOrThrow()
-
-            // Create trashed version (.filename)
-            val fileName = path.substringAfterLast("/")
-            val trashedPath = path.substringBeforeLast("/") + "/.$fileName"
-            putFile(token, repo, trashedPath, content, null, "Move to trash: $fileName").getOrThrow()
-
+            deleteFile(token, repo, "pile/$fileName", sha, "Move to trash: $fileName").getOrThrow()
+            putFile(token, repo, "trash/$fileName", content, null, "Trash: $fileName").getOrThrow()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-
 }

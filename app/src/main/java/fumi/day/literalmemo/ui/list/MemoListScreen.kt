@@ -261,8 +261,8 @@ fun MemoListScreen(
     memoToDelete?.let { memo ->
         AlertDialog(
             onDismissRequest = { memoToDelete = null },
-            title = { Text("Delete memo?") },
-            text = { Text("This memo will be moved to trash.") },
+            title = { Text("Delete?") },
+            text = { Text("This memo will be deleted.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -369,7 +369,9 @@ private fun MemoItem(
             ) {
                 Text(
                     text = memo.firstLine(),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontFamily = appTheme.fontFamily
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -399,6 +401,7 @@ private fun HighlightedSnippet(
     query: String,
     accentColor: Color
 ) {
+    val appTheme = LocalAppTheme.current
     val snippetLength = 60
     val index = content.indexOf(query, ignoreCase = true)
 
@@ -431,7 +434,9 @@ private fun HighlightedSnippet(
 
     Text(
         text = annotatedString,
-        style = MaterialTheme.typography.bodySmall,
+        style = MaterialTheme.typography.bodySmall.copy(
+            fontFamily = appTheme.fontFamily
+        ),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
@@ -447,7 +452,6 @@ private fun getSubtitleText(memos: List<Memo>, gitHubEnabled: Boolean, lastSynce
     return when {
         memos.isEmpty() -> "no memos yet"
         gitHubEnabled && lastSyncedAt != null -> "synced ${formatDate(lastSyncedAt)}"
-        memos.isNotEmpty() -> "updated ${formatDate(memos.maxOf { it.updatedAt })}"
-        else -> ""
+        else -> "updated ${formatDate(memos.maxOf { it.updatedAt })}"
     }
 }
