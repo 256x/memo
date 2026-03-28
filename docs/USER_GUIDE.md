@@ -23,7 +23,7 @@ Swipe left on any note to delete.
 
 Deleted notes move to `trash/`. They're gone from the app, but still exist in your repo.
 
-There is no restore UI. If you need something back, access your repo directly.
+There is no restore UI. If you need something back, find it in `trash/` in your repo and copy the content into a new note.
 
 ## GitHub Sync
 
@@ -42,7 +42,6 @@ There is no restore UI. If you need something back, access your repo directly.
 - Deletions: delete wins
 
 ### Repository Structure
-
 ```
 repo/
 ├── pile/
@@ -61,25 +60,16 @@ repo/
 ### PC Usage
 
 Edit notes directly:
-
-```
+```bash
 git pull
 # edit files in pile/
 git add . && git commit -m "update" && git push
 ```
 
 Permanently delete:
-
-```
+```bash
 rm trash/old_note.md
 git add . && git commit -m "cleanup" && git push
-```
-
-Recover a deleted note:
-
-```
-cp trash/note.md pile/$(date +%Y%m%d_%H%M%S).md
-git add . && git commit -m "recover" && git push
 ```
 
 ## Customization

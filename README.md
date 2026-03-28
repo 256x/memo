@@ -9,10 +9,10 @@ A minimalist text-based note app with Git sync.
 </p>
 
 <p>
-  <img src="https://github.com/user-attachments/assets/15ec5bf8-812e-460a-8ee8-fe8189b70650" width="180" />
-  <img src="https://github.com/user-attachments/assets/4081ba6f-22f6-44db-85aa-f6357fbed887" width="180" />
-  <img src="https://github.com/user-attachments/assets/539c1894-619f-4801-9947-97e834d2cdee" width="180" />
-  <img src="https://github.com/user-attachments/assets/3e789a4c-66c9-4da5-9562-2f71764aa9ed" width="180" />
+  <img src="https://github.com/user-attachments/assets/15ec5bf8-812e-460a-8ee8-fe8189b70650" width="180" alt="List screen" />
+  <img src="https://github.com/user-attachments/assets/4081ba6f-22f6-44db-85aa-f6357fbed887" width="180" alt="Edit screen" />
+  <img src="https://github.com/user-attachments/assets/539c1894-619f-4801-9947-97e834d2cdee" width="180" alt="Preview screen" />
+  <img src="https://github.com/user-attachments/assets/3e789a4c-66c9-4da5-9562-2f71764aa9ed" width="180" alt="Settings screen" />
 </p>
 
 [User Guide](./docs/USER_GUIDE.md)
@@ -51,7 +51,6 @@ Just text.
 ## How it works
 
 Notes are stored in a simple directory structure:
-
 ```
 repo/
 ├── pile/    ← active notes
@@ -78,7 +77,7 @@ Deleting a note moves it to `trash/`. That's it.
 
 There is no restore button. No undo.
 
-If you really need something back, open the repo on your PC, find it in `trash/`, and copy the content into a new note.
+If you really need something back, find it in `trash/` in your repo and copy the content into a new note.
 
 This is intentional. Deletion should feel final. It keeps your pile clean.
 
