@@ -18,13 +18,19 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.core.view.WindowCompat
+import fumi.day.literalmemo.R
 import fumi.day.literalmemo.data.prefs.AppFont
 import fumi.day.literalmemo.data.prefs.UserPrefs
+
+val ScopeOneFamily = FontFamily(
+    Font(R.font.scopeone, FontWeight.Normal)
+)
 
 data class AppThemeState(
     val fontFamily: FontFamily = FontFamily.Default,
@@ -50,6 +56,7 @@ fun AppFont.toFontFamily(): FontFamily {
         AppFont.DEFAULT -> FontFamily.Default
         AppFont.SERIF -> FontFamily.Serif
         AppFont.MONOSPACE -> FontFamily.Monospace
+        AppFont.SCOPE_ONE -> ScopeOneFamily
     }
 }
 

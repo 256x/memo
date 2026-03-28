@@ -18,7 +18,7 @@ import javax.inject.Singleton
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
 enum class AppFont {
-    DEFAULT, SERIF, MONOSPACE
+    DEFAULT, SERIF, MONOSPACE, SCOPE_ONE
 }
 
 data class UserPrefs(

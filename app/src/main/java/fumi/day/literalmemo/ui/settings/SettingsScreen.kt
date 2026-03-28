@@ -210,6 +210,7 @@ private fun AppearanceCard(
                                     AppFont.DEFAULT -> "Default"
                                     AppFont.SERIF -> "Serif"
                                     AppFont.MONOSPACE -> "Mono"
+                                    AppFont.SCOPE_ONE -> "Scope"
                                 }
                             )
                         }

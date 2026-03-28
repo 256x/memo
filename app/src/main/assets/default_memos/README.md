@@ -35,10 +35,11 @@ When you delete a note:
 2. It disappears from the app immediately
 3. There is no local trash — deletion syncs directly
 
-To permanently delete: remove files from trash/ on your PC.
-To recover: copy content from trash/ to a new file in pile/ on your PC.
+To permanently delete: remove files from trash/ in your repo.
 
 There is no restore button. No undo. This is intentional.
+
+If you really need something back, find it in trash/ in your repo and copy the content into a new note.
 
 ## Philosophy
 

@@ -1,5 +1,6 @@
 package fumi.day.literalmemo.ui.edit
 
+import android.graphics.Typeface
 import android.widget.TextView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -46,7 +47,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.res.ResourcesCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import fumi.day.literalmemo.R
 import fumi.day.literalmemo.data.prefs.AppFont
 import fumi.day.literalmemo.ui.theme.LocalAppTheme
 import io.noties.markwon.Markwon
@@ -148,6 +151,7 @@ fun MemoEditScreen(
                     MarkdownPreview(
                         content = content,
                         textColor = textColor,
+                        backgroundColor = backgroundColor,
                         fontSize = appTheme.fontSize,
                         fontFamily = userPrefs.font,
                         modifier = Modifier.fillMaxSize()
@@ -252,18 +256,28 @@ private fun applyToolbarAction(textFieldValue: TextFieldValue, action: ToolbarAc
 private fun MarkdownPreview(
     content: String,
     textColor: Color,
+    backgroundColor: Color,
     fontSize: Float,
     fontFamily: AppFont,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val textColorInt = textColor.toArgb()
+    val backgroundColorInt = backgroundColor.toArgb()
 
-    val markwon = remember(context) {
+    val scopeOneTypeface = remember(context) {
+        ResourcesCompat.getFont(context, R.font.scopeone)
+    }
+
+    val markwon = remember(context, textColorInt, backgroundColorInt) {
         Markwon.builder(context)
             .usePlugin(StrikethroughPlugin.create())
             .usePlugin(TablePlugin.create(context))
-            .usePlugin(TaskListPlugin.create(context))
+            .usePlugin(TaskListPlugin.create(
+                textColorInt,
+                textColorInt,
+                backgroundColorInt
+            ))
             .build()
     }
 
@@ -283,9 +297,10 @@ private fun MarkdownPreview(
             textView.setTextColor(textColorInt)
             textView.textSize = fontSize
             textView.typeface = when (fontFamily) {
-                AppFont.SERIF -> android.graphics.Typeface.SERIF
-                AppFont.MONOSPACE -> android.graphics.Typeface.MONOSPACE
-                AppFont.DEFAULT -> android.graphics.Typeface.DEFAULT
+                AppFont.SERIF -> Typeface.SERIF
+                AppFont.MONOSPACE -> Typeface.MONOSPACE
+                AppFont.DEFAULT -> Typeface.DEFAULT
+                AppFont.SCOPE_ONE -> scopeOneTypeface
             }
             markwon.setMarkdown(textView, content)
         },
