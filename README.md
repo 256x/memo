@@ -10,8 +10,8 @@ A minimalist text-based note app with Git sync.
 
 <p>
   <img src="https://github.com/user-attachments/assets/559015eb-0cc8-4d3f-a08a-1599d1044a58" width="180" alt="List screen" />
-  <img src="https://github.com/user-attachments/assets/665d6892-815b-436c-bed1-950b27cebdc9" width="180" alt="Edit screen" />
-  <img src="https://github.com/user-attachments/assets/b35ede18-2e2c-465d-9002-495a79686cf8" width="180" alt="Preview screen" />
+  <img src="https://github.com/user-attachments/assets/db213862-df2b-4620-bf36-697c7ca7f62b" width="180" alt="Edit screen" />
+  <img src="https://github.com/user-attachments/assets/c54ca296-42a1-45ed-a6cc-487eb3106509" width="180" alt="Preview screen" />
   <img src="https://github.com/user-attachments/assets/cc3cc969-4ef2-407d-a25b-52a273b6667f" width="180" alt="Settings screen" />
 </p>
 
