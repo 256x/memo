@@ -27,6 +27,7 @@ data class UserPrefs(
     val backgroundColorHex: String = "#F5F5DC",
     val textColorHex: String = "#000000",
     val accentColorHex: String = "#6650A4",
+    val fabOnLeft: Boolean = false,
     val gitHubEnabled: Boolean = false,
     val gitHubToken: String = "",
     val gitHubRepo: String = "",
@@ -43,6 +44,7 @@ class UserPreferences @Inject constructor(
         val BACKGROUND_COLOR = stringPreferencesKey("background_color")
         val TEXT_COLOR = stringPreferencesKey("text_color")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val FAB_ON_LEFT = booleanPreferencesKey("fab_on_left")
         val GITHUB_ENABLED = booleanPreferencesKey("github_enabled")
         val GITHUB_TOKEN = stringPreferencesKey("github_token")
         val GITHUB_REPO = stringPreferencesKey("github_repo")
@@ -56,6 +58,7 @@ class UserPreferences @Inject constructor(
             backgroundColorHex = prefs[Keys.BACKGROUND_COLOR] ?: "#F5F5DC",
             textColorHex = prefs[Keys.TEXT_COLOR] ?: "#000000",
             accentColorHex = prefs[Keys.ACCENT_COLOR] ?: "#6650A4",
+            fabOnLeft = prefs[Keys.FAB_ON_LEFT] ?: false,
             gitHubEnabled = prefs[Keys.GITHUB_ENABLED] ?: false,
             gitHubToken = prefs[Keys.GITHUB_TOKEN] ?: "",
             gitHubRepo = prefs[Keys.GITHUB_REPO] ?: "",
@@ -90,6 +93,12 @@ class UserPreferences @Inject constructor(
     suspend fun setAccentColor(hex: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.ACCENT_COLOR] = hex
+        }
+    }
+
+    suspend fun setFabOnLeft(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.FAB_ON_LEFT] = enabled
         }
     }
 

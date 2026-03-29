@@ -16,8 +16,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -123,9 +127,6 @@ fun MemoEditScreen(
                 },
                 title = { },
                 actions = {
-                    TextButton(onClick = { viewModel.togglePreviewMode() }) {
-                        Text(if (isPreviewMode) "Edit" else "Preview")
-                    }
                     if (currentFileName != null) {
                         IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete")
@@ -133,6 +134,21 @@ fun MemoEditScreen(
                     }
                 }
             )
+        },
+        floatingActionButtonPosition = if (userPrefs.fabOnLeft) FabPosition.Start else FabPosition.End,
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.togglePreviewMode() },
+                containerColor = appTheme.accentColor.takeIf { it != Color.Unspecified }
+                    ?: MaterialTheme.colorScheme.primary,
+                contentColor = appTheme.backgroundColor.takeIf { it != Color.Unspecified }
+                    ?: MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = if (isPreviewMode) Icons.Default.Edit else Icons.Default.Visibility,
+                    contentDescription = if (isPreviewMode) "Edit" else "Preview"
+                )
+            }
         }
     ) { paddingValues ->
         Column(

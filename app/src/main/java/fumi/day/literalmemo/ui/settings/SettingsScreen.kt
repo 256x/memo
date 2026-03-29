@@ -41,6 +41,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -119,7 +120,8 @@ fun SettingsScreen(
                 userPrefs = userPrefs,
                 onFontChange = viewModel::setFont,
                 onFontSizeChange = viewModel::setFontSize,
-                onColorClick = { target -> showColorPicker = target }
+                onColorClick = { target -> showColorPicker = target },
+                onFabOnLeftChange = viewModel::setFabOnLeft
             )
 
             GitHubSyncCard(
@@ -184,7 +186,8 @@ private fun AppearanceCard(
     userPrefs: fumi.day.literalmemo.data.prefs.UserPrefs,
     onFontChange: (AppFont) -> Unit,
     onFontSizeChange: (Float) -> Unit,
-    onColorClick: (ColorPickerTarget) -> Unit
+    onColorClick: (ColorPickerTarget) -> Unit,
+    onFabOnLeftChange: (Boolean) -> Unit
 ) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -260,6 +263,20 @@ private fun AppearanceCard(
                     label = "Accent",
                     color = parseColor(userPrefs.accentColorHex),
                     onClick = { onColorClick(ColorPickerTarget.ACCENT) }
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Controls on left", style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = userPrefs.fabOnLeft,
+                    onCheckedChange = onFabOnLeftChange
                 )
             }
         }

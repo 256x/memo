@@ -35,6 +35,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -91,7 +92,6 @@ fun MemoListScreen(
 
     var memoToDelete by remember { mutableStateOf<Memo?>(null) }
     var inputText by remember { mutableStateOf("") }
-
     val isSearching = searchQuery.isNotBlank()
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -206,6 +206,7 @@ fun MemoListScreen(
                 }
             }
         },
+        floatingActionButtonPosition = if (userPrefs.fabOnLeft) FabPosition.Start else FabPosition.End,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onNavigateToEdit(null) },
@@ -404,19 +405,16 @@ private fun HighlightedSnippet(
     val appTheme = LocalAppTheme.current
     val snippetLength = 60
     val index = content.indexOf(query, ignoreCase = true)
-
     if (index == -1) return
 
     val start = (index - snippetLength / 2).coerceAtLeast(0)
     val end = (index + query.length + snippetLength / 2).coerceAtMost(content.length)
-
     val snippet = content.substring(start, end)
         .replace('\n', ' ')
         .let { if (start > 0) "...$it" else it }
         .let { if (end < content.length) "$it..." else it }
 
     val queryStartInSnippet = snippet.indexOf(query, ignoreCase = true)
-
     if (queryStartInSnippet == -1) return
 
     val annotatedString = buildAnnotatedString {

@@ -65,6 +65,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setFabOnLeft(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferences.setFabOnLeft(enabled)
+        }
+    }
+
     fun saveGitHubConfig(token: String, repo: String) {
         viewModelScope.launch {
             userPreferences.setGitHubConfig(
