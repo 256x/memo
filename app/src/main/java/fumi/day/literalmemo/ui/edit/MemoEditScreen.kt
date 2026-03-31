@@ -65,6 +65,7 @@ import io.noties.markwon.ext.tasklist.TaskListPlugin
 @Composable
 fun MemoEditScreen(
     onNavigateBack: () -> Unit,
+    initialContent: String? = null,
     viewModel: MemoEditViewModel = hiltViewModel()
 ) {
     val content by viewModel.content.collectAsState()
@@ -75,8 +76,15 @@ fun MemoEditScreen(
 
     var textFieldValue by remember { mutableStateOf(TextFieldValue(content)) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(initialContent) {
+        if (initialContent != null) {
+            viewModel.setInitialContent(initialContent)
+        }
+    }
 
     LaunchedEffect(content) {
         if (textFieldValue.text != content) {
@@ -98,12 +106,12 @@ fun MemoEditScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.save()
+            viewModel.saveAndSync()
         }
     }
 
     BackHandler {
-        viewModel.save()
+        viewModel.saveAndSync()
         onNavigateBack()
     }
 
@@ -119,7 +127,7 @@ fun MemoEditScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = {
-                        viewModel.save()
+                        viewModel.saveAndSync()
                         onNavigateBack()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

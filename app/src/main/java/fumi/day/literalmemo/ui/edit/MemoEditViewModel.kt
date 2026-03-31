@@ -1,13 +1,17 @@
 package fumi.day.literalmemo.ui.edit
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import fumi.day.literalmemo.data.github.GitHubSyncManager
 import fumi.day.literalmemo.data.prefs.UserPreferences
 import fumi.day.literalmemo.data.prefs.UserPrefs
 import fumi.day.literalmemo.data.repository.MemoRepository
 import fumi.day.literalmemo.domain.model.Memo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,13 +23,15 @@ import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import javax.inject.Inject
 
 @HiltViewModel
 class MemoEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val memoRepository: MemoRepository,
-    userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val syncManager: GitHubSyncManager
 ) : ViewModel() {
 
     private val fileName: String? = savedStateHandle["fileName"]
@@ -49,6 +55,16 @@ class MemoEditViewModel @Inject constructor(
             initialValue = UserPrefs()
         )
 
+    private var initialContentFromShare: String? = null
+
+    fun setInitialContent(content: String?) {
+        if (content != null && _content.value.isEmpty()) {
+            _content.value = content
+            initialContentFromShare = content
+            originalContent = ""
+        }
+    }
+
     init {
         if (fileName != null) {
             viewModelScope.launch {
@@ -71,12 +87,10 @@ class MemoEditViewModel @Inject constructor(
 
     fun save() {
         val content = _content.value
-        
-        // 空の場合は保存しない
+
         if (content.isBlank()) return
-        
-        // 内容が変更されていない場合は保存しない
-        if (content == originalContent && !isNewMemo) return
+
+        if (content == originalContent && !isNewMemo && initialContentFromShare == null) return
 
         val fileNameToSave = _currentFileName.value ?: generateFileName()
 
@@ -91,19 +105,65 @@ class MemoEditViewModel @Inject constructor(
         }
         _currentFileName.value = fileNameToSave
         originalContent = content
+        initialContentFromShare = null
+    }
+
+    fun saveAndSync() {
+        Log.d("LiteralMemo", "saveAndSync called")
+        save()
+        syncInBackground()
     }
 
     fun deleteMemo(onComplete: () -> Unit) {
-        viewModelScope.launch {
+        Log.d("LiteralMemo", "deleteMemo called")
+        GlobalScope.launch(Dispatchers.IO) {
             _currentFileName.value?.let { fileName ->
+                Log.d("LiteralMemo", "trashing: $fileName")
                 memoRepository.trash(fileName)
             }
-            onComplete()
+            Log.d("LiteralMemo", "starting sync after delete")
+            try {
+                val prefs = userPreferences.userPrefs.first()
+                Log.d("LiteralMemo", "prefs: enabled=${prefs.gitHubEnabled}")
+                if (prefs.gitHubEnabled && prefs.gitHubToken.isNotBlank() && prefs.gitHubRepo.isNotBlank()) {
+                    Log.d("LiteralMemo", "calling sync after delete...")
+                    val result = syncManager.sync(prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt)
+                    Log.d("LiteralMemo", "sync after delete result: up=${result.uploaded} down=${result.downloaded} errors=${result.errors}")
+                    if (result.errors.isEmpty()) {
+                        userPreferences.setLastSyncedAt(System.currentTimeMillis())
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("LiteralMemo", "sync error after delete", e)
+            }
+        }
+        onComplete()
+    }
+
+    private fun syncInBackground() {
+        Log.d("LiteralMemo", "syncInBackground called")
+        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val prefs = userPreferences.userPrefs.first()
+                Log.d("LiteralMemo", "prefs: enabled=${prefs.gitHubEnabled}, token=${prefs.gitHubToken.take(5)}..., repo=${prefs.gitHubRepo}")
+                if (prefs.gitHubEnabled && prefs.gitHubToken.isNotBlank() && prefs.gitHubRepo.isNotBlank()) {
+                    Log.d("LiteralMemo", "calling sync...")
+                    val result = syncManager.sync(prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt)
+                    Log.d("LiteralMemo", "sync result: up=${result.uploaded} down=${result.downloaded} errors=${result.errors}")
+                    if (result.errors.isEmpty()) {
+                        userPreferences.setLastSyncedAt(System.currentTimeMillis())
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("LiteralMemo", "sync error", e)
+            }
         }
     }
 
     private fun generateFileName(): String {
-        val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+        val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
         return "${formatter.format(Date())}.md"
     }
 }

@@ -40,14 +40,13 @@ Literal Memo is built on a simple principle:
 No folders. No tags. No archive. No restore.
 
 Just text.
-
 ## Features
 
-- **Plain Text**: Every note is a simple `.md` file.
-- **Git Sync**: Sync notes across devices via your own GitHub repo.
-- **Search**: Find anything instantly with full-text search.
-- **Customization**: Change font, colors, and text size.
-
+- **Write**: Minimal markdown editor with toolbar
+- **Search**: Full-text search across all memos
+- **Share**: Receive URLs and text from other apps
+- **Sync**: GitHub sync with auto-sync on launch and after editing
+- **Customize**: Font, colors, left-hand mode
 ## How it works
 
 Notes are stored in a simple directory structure:
@@ -102,6 +101,26 @@ It's about not needing to.
 This app is intentionally simple.
 
 If it needs heavy documentation or multiple language support, it's already too complicated.
+
+## Usage
+
+### Sharing Links
+
+1. Find a link in your browser or any app
+2. Tap Share → Literal Memo
+3. A new memo is created with the link
+4. View it later in Preview mode to open the link
+
+### Multi-device Sync
+
+GitHub Sync keeps your memos synchronized across devices:
+
+- Syncs automatically on app launch and after editing
+- Don't edit the same memo on multiple devices simultaneously
+- If conflicts occur, the first device to sync wins
+- All changes are preserved in Git history
+
+For detailed sync behavior, see [User Guide](docs/USER_GUIDE.md).
 
 ## Credits
 

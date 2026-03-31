@@ -74,7 +74,7 @@ class MemoListViewModel @Inject constructor(
             try {
                 val prefs = userPrefs.value
                 if (prefs.gitHubEnabled && prefs.gitHubToken.isNotBlank() && prefs.gitHubRepo.isNotBlank()) {
-                    val result = syncManager.sync(prefs.gitHubToken, prefs.gitHubRepo)
+                    val result = syncManager.sync(prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt)
                     if (result.errors.isEmpty()) {
                         userPreferences.setLastSyncedAt(System.currentTimeMillis())
                     }

@@ -11,12 +11,18 @@ import fumi.day.literalmemo.ui.theme.LiteralMemoTheme
 
 @Composable
 fun App(
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
+    sharedText: String? = null,
+    onSharedTextConsumed: () -> Unit = {}
 ) {
     val userPrefs by userPreferences.userPrefs.collectAsState(initial = UserPrefs())
-    
+
     LiteralMemoTheme(userPrefs = userPrefs) {
         val navController = rememberNavController()
-        NavGraph(navController = navController)
+        NavGraph(
+            navController = navController,
+            sharedText = sharedText,
+            onSharedTextConsumed = onSharedTextConsumed
+        )
     }
 }

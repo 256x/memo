@@ -20,7 +20,6 @@ class GitHubSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val gitHubRepository: GitHubRepository
 ) {
-
     private val pileDir: File by lazy {
         File(context.filesDir, "pile").also { it.mkdirs() }
     }
@@ -29,7 +28,7 @@ class GitHubSyncManager @Inject constructor(
         File(context.filesDir, "trash").also { it.mkdirs() }
     }
 
-    suspend fun sync(token: String, repo: String): SyncResult = withContext(Dispatchers.IO) {
+    suspend fun sync(token: String, repo: String, lastSyncedAt: Long?): SyncResult = withContext(Dispatchers.IO) {
         var uploaded = 0
         var downloaded = 0
         var trashed = 0
@@ -86,7 +85,6 @@ class GitHubSyncManager @Inject constructor(
                         inLocalTrash && !inRemoteTrash -> {
                             val localFile = localTrashFiles[fileName]!!
                             val content = localFile.readText(Charsets.UTF_8)
-                            
                             if (inRemotePile) {
                                 val remoteFile = remotePileFiles[fileName]!!
                                 val moveResult = gitHubRepository.moveToTrash(token, repo, fileName, remoteFile.sha, content)
@@ -125,16 +123,24 @@ class GitHubSyncManager @Inject constructor(
                             val remoteFile = remotePileFiles[fileName]!!
                             val localContent = localFile.readText(Charsets.UTF_8)
                             val remoteContentResult = gitHubRepository.getFile(token, repo, remoteFile.path)
-                            
+
                             if (remoteContentResult.isSuccess) {
                                 val remoteContent = remoteContentResult.getOrThrow().content
                                 if (localContent != remoteContent) {
-                                    val result = gitHubRepository.putFile(
-                                        token, repo, "pile/$fileName", localContent,
-                                        sha = remoteFile.sha,
-                                        message = "Update $fileName"
-                                    )
-                                    if (result.isSuccess) uploaded++
+                                    val localModified = localFile.lastModified()
+                                    val syncTime = lastSyncedAt ?: 0L
+
+                                    if (localModified > syncTime) {
+                                        val result = gitHubRepository.putFile(
+                                            token, repo, "pile/$fileName", localContent,
+                                            sha = remoteFile.sha,
+                                            message = "Update $fileName"
+                                        )
+                                        if (result.isSuccess) uploaded++
+                                    } else {
+                                        localFile.writeText(remoteContent, Charsets.UTF_8)
+                                        downloaded++
+                                    }
                                 }
                             }
                         }
@@ -146,7 +152,6 @@ class GitHubSyncManager @Inject constructor(
                     errors.add("Error: ${e.message}")
                 }
             }
-
         } catch (e: Exception) {
             errors.add("Sync failed")
         }
