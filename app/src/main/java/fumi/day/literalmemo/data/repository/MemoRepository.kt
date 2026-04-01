@@ -8,5 +8,4 @@ interface MemoRepository {
     suspend fun getByFileName(fileName: String): Memo?
     suspend fun save(memo: Memo)
     suspend fun trash(fileName: String)
-    fun search(query: String): Flow<List<Memo>>
 }

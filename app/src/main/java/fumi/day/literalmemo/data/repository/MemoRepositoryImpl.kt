@@ -8,13 +8,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,14 +24,6 @@ class MemoRepositoryImpl @Inject constructor(
 
     private val trashDir: File by lazy {
         File(context.filesDir, "trash").also { it.mkdirs() }
-    }
-
-    private val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
-
-    private fun generateFileName(): String {
-        return "${dateFormat.format(Date())}.md"
     }
 
     private fun File.toMemo(): Memo? {
@@ -69,8 +56,7 @@ class MemoRepositoryImpl @Inject constructor(
     }
 
     override suspend fun save(memo: Memo) = withContext(Dispatchers.IO) {
-        val fileName = memo.fileName.ifEmpty { generateFileName() }
-        val file = File(pileDir, fileName)
+        val file = File(pileDir, memo.fileName)
         file.writeText(memo.content, Charsets.UTF_8)
     }
 
@@ -79,18 +65,6 @@ class MemoRepositoryImpl @Inject constructor(
         if (file.exists()) {
             val trashedFile = File(trashDir, fileName)
             file.renameTo(trashedFile)
-        }
-    }
-
-    override fun search(query: String): Flow<List<Memo>> {
-        return observeAll().map { memos ->
-            if (query.isBlank()) {
-                memos
-            } else {
-                memos.filter { memo ->
-                    memo.content.contains(query, ignoreCase = true)
-                }
-            }
         }
     }
 }

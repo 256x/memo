@@ -441,9 +441,10 @@ private fun HighlightedSnippet(
     )
 }
 
+private val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+
 private fun formatDate(timestamp: Long): String {
-    val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-    return formatter.format(Date(timestamp))
+    return dateFormatter.format(Date(timestamp))
 }
 
 private fun getSubtitleText(memos: List<Memo>, gitHubEnabled: Boolean, lastSyncedAt: Long?): String {

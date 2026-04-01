@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,7 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MemoListViewModel @Inject constructor(
     private val memoRepository: MemoRepository,
-    private val userPreferences: UserPreferences,
+    userPreferences: UserPreferences,
     private val syncManager: GitHubSyncManager
 ) : ViewModel() {
 
@@ -31,10 +32,9 @@ class MemoListViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val memos: StateFlow<List<Memo>> = _searchQuery
         .flatMapLatest { query ->
-            if (query.isBlank()) {
-                memoRepository.observeAll()
-            } else {
-                memoRepository.search(query)
+            memoRepository.observeAll().map { memos ->
+                if (query.isBlank()) memos
+                else memos.filter { it.content.contains(query, ignoreCase = true) }
             }
         }
         .stateIn(
@@ -53,7 +53,6 @@ class MemoListViewModel @Inject constructor(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
-
     fun executeSearch(query: String) {
         _searchQuery.value = query
     }
@@ -65,6 +64,7 @@ class MemoListViewModel @Inject constructor(
     fun trashMemo(fileName: String) {
         viewModelScope.launch {
             memoRepository.trash(fileName)
+            sync()
         }
     }
 
@@ -72,13 +72,7 @@ class MemoListViewModel @Inject constructor(
         viewModelScope.launch {
             _isSyncing.value = true
             try {
-                val prefs = userPrefs.value
-                if (prefs.gitHubEnabled && prefs.gitHubToken.isNotBlank() && prefs.gitHubRepo.isNotBlank()) {
-                    val result = syncManager.sync(prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt)
-                    if (result.errors.isEmpty()) {
-                        userPreferences.setLastSyncedAt(System.currentTimeMillis())
-                    }
-                }
+                syncManager.syncIfEnabled()
             } finally {
                 _isSyncing.value = false
             }

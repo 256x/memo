@@ -64,7 +64,6 @@ fun AppFont.toFontFamily(): FontFamily {
 fun LiteralMemoTheme(
     userPrefs: UserPrefs = UserPrefs(),
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val accentColor = parseColor(userPrefs.accentColorHex).let {
@@ -82,7 +81,7 @@ fun LiteralMemoTheme(
     }
 
     val baseColorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }

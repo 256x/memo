@@ -78,6 +78,9 @@ class SettingsViewModel @Inject constructor(
                 token = token,
                 repo = repo
             )
+            if (token.isNotBlank() && repo.isNotBlank()) {
+                syncNow()
+            }
         }
     }
 
@@ -92,17 +95,15 @@ class SettingsViewModel @Inject constructor(
             _isSyncing.value = true
             _syncResult.value = null
             try {
-                val prefs = userPrefs.value
-                if (prefs.gitHubEnabled && prefs.gitHubToken.isNotBlank() && prefs.gitHubRepo.isNotBlank()) {
-                    val result = syncManager.sync(prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt)
-                    _syncResult.value = result
-                    if (result.errors.isEmpty()) {
-                        userPreferences.setLastSyncedAt(System.currentTimeMillis())
-                    }
-                }
+                val result = syncManager.syncIfEnabled()
+                _syncResult.value = result
             } finally {
                 _isSyncing.value = false
             }
         }
+    }
+
+    fun clearSyncResult() {
+        _syncResult.value = null
     }
 }

@@ -2,7 +2,9 @@ package fumi.day.literalmemo.data.github
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import fumi.day.literalmemo.data.prefs.UserPreferences
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -18,7 +20,8 @@ data class SyncResult(
 @Singleton
 class GitHubSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val gitHubRepository: GitHubRepository
+    private val gitHubRepository: GitHubRepository,
+    private val userPreferences: UserPreferences
 ) {
     private val pileDir: File by lazy {
         File(context.filesDir, "pile").also { it.mkdirs() }
@@ -26,6 +29,18 @@ class GitHubSyncManager @Inject constructor(
 
     private val trashDir: File by lazy {
         File(context.filesDir, "trash").also { it.mkdirs() }
+    }
+
+    suspend fun syncIfEnabled(): SyncResult? = withContext(Dispatchers.IO) {
+        val prefs = userPreferences.userPrefs.first()
+        if (!prefs.gitHubEnabled || prefs.gitHubToken.isBlank() || prefs.gitHubRepo.isBlank()) {
+            return@withContext null
+        }
+        val result = sync(prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt)
+        if (result.errors.isEmpty()) {
+            userPreferences.setLastSyncedAt(System.currentTimeMillis())
+        }
+        result
     }
 
     suspend fun sync(token: String, repo: String, lastSyncedAt: Long?): SyncResult = withContext(Dispatchers.IO) {
@@ -122,14 +137,13 @@ class GitHubSyncManager @Inject constructor(
                             val localFile = localPileFiles[fileName]!!
                             val remoteFile = remotePileFiles[fileName]!!
                             val localContent = localFile.readText(Charsets.UTF_8)
-                            val remoteContentResult = gitHubRepository.getFile(token, repo, remoteFile.path)
 
+                            val remoteContentResult = gitHubRepository.getFile(token, repo, remoteFile.path)
                             if (remoteContentResult.isSuccess) {
                                 val remoteContent = remoteContentResult.getOrThrow().content
                                 if (localContent != remoteContent) {
                                     val localModified = localFile.lastModified()
                                     val syncTime = lastSyncedAt ?: 0L
-
                                     if (localModified > syncTime) {
                                         val result = gitHubRepository.putFile(
                                             token, repo, "pile/$fileName", localContent,

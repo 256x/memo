@@ -15,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -88,13 +87,7 @@ class MainActivity : ComponentActivity() {
     private fun syncInBackground() {
         scope.launch {
             try {
-                val prefs = userPreferences.userPrefs.first()
-                if (prefs.gitHubEnabled && prefs.gitHubToken.isNotBlank() && prefs.gitHubRepo.isNotBlank()) {
-                    val result = syncManager.sync(prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt)
-                    if (result.errors.isEmpty()) {
-                        userPreferences.setLastSyncedAt(System.currentTimeMillis())
-                    }
-                }
+                syncManager.syncIfEnabled()
             } catch (e: Exception) {
                 // Silent fail for background sync
             }

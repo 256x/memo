@@ -68,6 +68,7 @@ fun MemoEditScreen(
     initialContent: String? = null,
     viewModel: MemoEditViewModel = hiltViewModel()
 ) {
+
     val content by viewModel.content.collectAsState()
     val isPreviewMode by viewModel.isPreviewMode.collectAsState()
     val currentFileName by viewModel.currentFileName.collectAsState()
@@ -111,7 +112,6 @@ fun MemoEditScreen(
     }
 
     BackHandler {
-        viewModel.saveAndSync()
         onNavigateBack()
     }
 
@@ -127,7 +127,6 @@ fun MemoEditScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = {
-                        viewModel.saveAndSync()
                         onNavigateBack()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

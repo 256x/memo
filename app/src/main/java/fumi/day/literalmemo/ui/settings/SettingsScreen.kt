@@ -127,7 +127,6 @@ fun SettingsScreen(
             GitHubSyncCard(
                 userPrefs = userPrefs,
                 isSyncing = isSyncing,
-                syncResult = syncResult,
                 accentColor = appTheme.accentColor,
                 onConnectClick = { showGitHubDialog = true },
                 onSyncNowClick = viewModel::syncNow,
@@ -174,6 +173,46 @@ fun SettingsScreen(
             },
             onDismiss = { showGitHubDialog = false }
         )
+    }
+
+    // Sync progress dialog
+    if (isSyncing) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Syncing...") },
+            text = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Text("Downloading and uploading files...")
+                }
+            },
+            confirmButton = { }
+        )
+    }
+
+    // Sync result dialog
+    syncResult?.let { result ->
+        if (!isSyncing) {
+            AlertDialog(
+                onDismissRequest = { viewModel.clearSyncResult() },
+                title = { Text(if (result.errors.isEmpty()) "Sync Complete" else "Sync Error") },
+                text = {
+                    if (result.errors.isEmpty()) {
+                        Text("Downloaded ${result.downloaded} files\nUploaded ${result.uploaded} files")
+                    } else {
+                        Text(result.errors.joinToString("\n"))
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.clearSyncResult() }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -373,6 +412,7 @@ private fun ColorPickerDialog(
                                 colors = listOf(Color.Transparent, Color.Black)
                             )
                         )
+
                         val cursorX = saturation * size.width
                         val cursorY = (1f - brightness) * size.height
                         drawCircle(
@@ -410,6 +450,7 @@ private fun ColorPickerDialog(
                         drawRect(
                             brush = Brush.horizontalGradient(colors)
                         )
+
                         val cursorX = hue / 360f * size.width
                         drawCircle(
                             color = Color.White,
@@ -465,7 +506,6 @@ private fun colorToHex(color: Color): String {
 private fun GitHubSyncCard(
     userPrefs: fumi.day.literalmemo.data.prefs.UserPrefs,
     isSyncing: Boolean,
-    syncResult: fumi.day.literalmemo.data.github.SyncResult?,
     accentColor: Color,
     onConnectClick: () -> Unit,
     onSyncNowClick: () -> Unit,
@@ -526,21 +566,6 @@ private fun GitHubSyncCard(
                     }
                 }
 
-                syncResult?.let { result ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (result.errors.isEmpty()) {
-                        Text(
-                            text = "↑${result.uploaded} ↓${result.downloaded}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    } else {
-                        Text(
-                            text = result.errors.first(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
             }
         }
     }
