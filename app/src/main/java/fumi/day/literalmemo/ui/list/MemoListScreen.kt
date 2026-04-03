@@ -236,7 +236,6 @@ fun MemoListScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item { Spacer(modifier = Modifier.height(8.dp)) }
                 itemsIndexed(
@@ -348,7 +347,7 @@ private fun MemoItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (isOdd) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f)
+                if (isOdd) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f)
                 else Color.Transparent
             )
             .clickable { onClick() }
