@@ -5,7 +5,7 @@ Write. Throw. Search.
 A minimalist text-based note app with Git sync.
 
 <p>
-  <a href="https://github.com/256x/memo/releases/latest"><img src="https://img.shields.io/github/v/release/256x/memo?label=GitHub%20Release"></a>&nbsp;<img src="https://img.shields.io/badge/Android-8%2B-blue">&nbsp;<img src="https://img.shields.io/badge/license-MIT-lightgrey">
+  <a href="https://github.com/256x/memo/releases/latest"><img src="https://img.shields.io/github/v/release/256x/memo?label=GitHub%20Release"></a>&nbsp;<a href="https://apt.izzysoft.de/packages/fumi.day.literalmemo"><img src="https://img.shields.io/badge/IzzyOnDroid-download-brightgreen"></a>&nbsp;<img src="https://img.shields.io/badge/Android-8%2B-blue">&nbsp;<img src="https://img.shields.io/badge/license-MIT-lightgrey">
 </p>
 
 <p>
