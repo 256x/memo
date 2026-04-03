@@ -13,13 +13,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -31,8 +30,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
@@ -242,14 +239,15 @@ fun MemoListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item { Spacer(modifier = Modifier.height(8.dp)) }
-                items(
+                itemsIndexed(
                     items = memos,
-                    key = { it.fileName }
-                ) { memo ->
+                    key = { _, memo -> memo.fileName }
+                ) { index, memo ->
                     SwipeableMemoItem(
                         memo = memo,
                         searchQuery = searchQuery,
                         accentColor = appTheme.accentColor,
+                        isOdd = index % 2 == 0,
                         onClick = { onNavigateToEdit(memo.fileName) },
                         onSwipeToDelete = { memoToDelete = memo }
                     )
@@ -289,10 +287,12 @@ private fun SwipeableMemoItem(
     memo: Memo,
     searchQuery: String,
     accentColor: Color,
+    isOdd: Boolean,
     onClick: () -> Unit,
     onSwipeToDelete: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
+        initialValue = SwipeToDismissBoxValue.Settled,
         confirmValueChange = { dismissValue ->
             if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
                 onSwipeToDelete()
@@ -317,15 +317,7 @@ private fun SwipeableMemoItem(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(color)
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.onError
-                )
-            }
+            )
         },
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = true
@@ -334,6 +326,7 @@ private fun SwipeableMemoItem(
             memo = memo,
             searchQuery = searchQuery,
             accentColor = accentColor,
+            isOdd = isOdd,
             onClick = onClick
         )
     }
@@ -344,28 +337,27 @@ private fun MemoItem(
     memo: Memo,
     searchQuery: String,
     accentColor: Color,
+    isOdd: Boolean,
     onClick: () -> Unit
 ) {
     val isSearching = searchQuery.isNotBlank()
     val appTheme = LocalAppTheme.current
     val lineHeight = (appTheme.fontSize * 1.8f).dp
 
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            .background(
+                if (isOdd) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f)
+                else Color.Transparent
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = lineHeight),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -383,7 +375,6 @@ private fun MemoItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-
             if (isSearching) {
                 Spacer(modifier = Modifier.height(4.dp))
                 HighlightedSnippet(
