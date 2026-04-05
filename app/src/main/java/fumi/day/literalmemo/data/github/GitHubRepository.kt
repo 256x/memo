@@ -196,8 +196,8 @@ class GitHubRepository @Inject constructor() {
         content: String
     ): Result<Unit> {
         return try {
-            deleteFile(token, repo, "pile/$fileName", sha, "Move to trash: $fileName").getOrThrow()
             putFile(token, repo, "trash/$fileName", content, null, "Trash: $fileName").getOrThrow()
+            deleteFile(token, repo, "pile/$fileName", sha, "Move to trash: $fileName").getOrThrow()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
