@@ -37,8 +37,8 @@ android {
         applicationId = "fumi.day.literalmemo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.0.7"
+        versionCode = 9
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -92,6 +92,8 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
 
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     implementation(libs.markwon.core)
     implementation(libs.markwon.strikethrough)

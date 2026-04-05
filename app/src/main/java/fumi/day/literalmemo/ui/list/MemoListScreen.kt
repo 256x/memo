@@ -84,6 +84,7 @@ fun MemoListScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val userPrefs by viewModel.userPrefs.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val syncError by viewModel.syncError.collectAsState()
     val appTheme = LocalAppTheme.current
 
     var memoToDelete by remember { mutableStateOf<Memo?>(null) }
@@ -137,7 +138,7 @@ fun MemoListScreen(
                                 text = if (isSearching) {
                                     "searching: $searchQuery"
                                 } else {
-                                    getSubtitleText(memos, userPrefs.gitHubEnabled, userPrefs.lastSyncedAt)
+                                    getSubtitleText(memos, userPrefs.gitHubEnabled, userPrefs.lastSyncedAt, syncError)
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -437,9 +438,10 @@ private fun formatDate(timestamp: Long): String {
     return dateFormatter.format(Date(timestamp))
 }
 
-private fun getSubtitleText(memos: List<Memo>, gitHubEnabled: Boolean, lastSyncedAt: Long?): String {
+private fun getSubtitleText(memos: List<Memo>, gitHubEnabled: Boolean, lastSyncedAt: Long?, syncError: String?): String {
     return when {
         memos.isEmpty() -> "no memos yet"
+        gitHubEnabled && syncError != null -> "Sync failed: $syncError"
         gitHubEnabled && lastSyncedAt != null -> "synced ${formatDate(lastSyncedAt)}"
         else -> "updated ${formatDate(memos.maxOf { it.updatedAt })}"
     }

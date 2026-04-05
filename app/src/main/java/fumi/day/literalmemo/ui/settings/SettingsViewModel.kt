@@ -29,8 +29,7 @@ class SettingsViewModel @Inject constructor(
             initialValue = UserPrefs()
         )
 
-    private val _isSyncing = MutableStateFlow(false)
-    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+    val isSyncing: StateFlow<Boolean> = syncManager.isSyncing
 
     private val _syncResult = MutableStateFlow<SyncResult?>(null)
     val syncResult: StateFlow<SyncResult?> = _syncResult.asStateFlow()
@@ -92,14 +91,8 @@ class SettingsViewModel @Inject constructor(
 
     fun syncNow() {
         viewModelScope.launch {
-            _isSyncing.value = true
             _syncResult.value = null
-            try {
-                val result = syncManager.syncIfEnabled()
-                _syncResult.value = result
-            } finally {
-                _isSyncing.value = false
-            }
+            _syncResult.value = syncManager.syncAndAwait()
         }
     }
 

@@ -542,6 +542,15 @@ private fun GitHubSyncCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                if (userPrefs.gitHubToken.isBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Token missing. Please re-enter your Personal Access Token.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(

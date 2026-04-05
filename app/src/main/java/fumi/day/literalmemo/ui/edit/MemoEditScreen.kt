@@ -32,6 +32,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -105,14 +108,19 @@ fun MemoEditScreen(
         MaterialTheme.colorScheme.onSurface
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.saveAndSync()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                viewModel.save()
+            }
         }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     BackHandler {
-        onNavigateBack()
+        viewModel.saveAndSync(onNavigateBack)
     }
 
     LaunchedEffect(isPreviewMode) {
@@ -127,7 +135,7 @@ fun MemoEditScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = {
-                        onNavigateBack()
+                        viewModel.saveAndSync(onNavigateBack)
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }

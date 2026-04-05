@@ -50,8 +50,8 @@ class MemoListViewModel @Inject constructor(
             initialValue = UserPrefs()
         )
 
-    private val _isSyncing = MutableStateFlow(false)
-    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+    val isSyncing: StateFlow<Boolean> = syncManager.isSyncing
+    val syncError: StateFlow<String?> = syncManager.syncError
 
     fun executeSearch(query: String) {
         _searchQuery.value = query
@@ -64,18 +64,11 @@ class MemoListViewModel @Inject constructor(
     fun trashMemo(fileName: String) {
         viewModelScope.launch {
             memoRepository.trash(fileName)
-            sync()
         }
+        syncManager.launchSync()
     }
 
     fun sync() {
-        viewModelScope.launch {
-            _isSyncing.value = true
-            try {
-                syncManager.syncIfEnabled()
-            } finally {
-                _isSyncing.value = false
-            }
-        }
+        syncManager.launchSync()
     }
 }

@@ -10,6 +10,7 @@ import fumi.day.literalmemo.data.prefs.UserPrefs
 import fumi.day.literalmemo.data.repository.MemoRepository
 import fumi.day.literalmemo.domain.model.Memo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -99,19 +100,43 @@ class MemoEditViewModel @Inject constructor(
         }
     }
 
-    fun saveAndSync() {
-        save()
+    fun saveAndSync(onComplete: () -> Unit) {
+        val content = _content.value
+        if (content.isBlank()) {
+            onComplete()
+            return
+        }
+        if (content == originalContent && !isNewMemo) {
+            onComplete()
+            return
+        }
+
+        val fileNameToSave = _currentFileName.value ?: generateFileName()
+        val memo = Memo(
+            fileName = fileNameToSave,
+            content = content,
+            updatedAt = System.currentTimeMillis()
+        )
+        _currentFileName.value = fileNameToSave
+        originalContent = content
+
         viewModelScope.launch(Dispatchers.IO) {
-            syncManager.syncIfEnabled()
+            memoRepository.save(memo)
+            syncManager.launchSync()
+            withContext(Dispatchers.Main) {
+                onComplete()
+            }
         }
     }
 
     fun deleteMemo(onComplete: () -> Unit) {
         val fileNameToDelete = _currentFileName.value
-        onComplete()
         viewModelScope.launch(Dispatchers.IO) {
             fileNameToDelete?.let { memoRepository.trash(it) }
-            syncManager.syncIfEnabled()
+            syncManager.launchSync()
+            withContext(Dispatchers.Main) {
+                onComplete()
+            }
         }
     }
 
