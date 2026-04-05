@@ -10,6 +10,6 @@ Features:
 - Customization: Change colors, font, and size.
 - Trash Management: Restore or permanently delete anytime.
 
-GitHub Sync stores active memos in pile/filename.md and trashed memos as pile/.filename.md. You can add or edit files directly on GitHub.
+GitHub Sync stores active memos in pile/filename.md and trashed memos as trash/.filename.md. You can add or edit files directly on GitHub.
 
 Literal Memo is for people who want a simple, distraction-free note-taking app with plain text files and Git-friendly sync.
