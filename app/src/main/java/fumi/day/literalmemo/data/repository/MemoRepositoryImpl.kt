@@ -22,11 +22,7 @@ class MemoRepositoryImpl @Inject constructor(
         File(context.filesDir, "pile").also { it.mkdirs() }
     }
 
-    private val trashDir: File by lazy {
-        File(context.filesDir, "trash").also { it.mkdirs() }
-    }
-
-    private fun File.toMemo(): Memo? {
+private fun File.toMemo(): Memo? {
         if (!exists() || !isFile || !name.endsWith(".md")) return null
         return try {
             Memo(
@@ -60,11 +56,8 @@ class MemoRepositoryImpl @Inject constructor(
         file.writeText(memo.content, Charsets.UTF_8)
     }
 
-    override suspend fun trash(fileName: String) = withContext(Dispatchers.IO) {
-        val file = File(pileDir, fileName)
-        if (file.exists()) {
-            val trashedFile = File(trashDir, fileName)
-            file.renameTo(trashedFile)
-        }
+    override suspend fun delete(fileName: String) = withContext(Dispatchers.IO) {
+        File(pileDir, fileName).delete()
+        Unit
     }
 }

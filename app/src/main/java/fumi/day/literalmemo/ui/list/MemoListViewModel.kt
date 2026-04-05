@@ -61,11 +61,11 @@ class MemoListViewModel @Inject constructor(
         _searchQuery.value = ""
     }
 
-    fun trashMemo(fileName: String) {
+    fun deleteMemo(fileName: String) {
         viewModelScope.launch {
-            memoRepository.trash(fileName)
+            memoRepository.delete(fileName)
+            syncManager.moveToRemoteTrash(fileName)
         }
-        syncManager.launchSync()
     }
 
     fun sync() {

@@ -53,12 +53,8 @@ Notes are stored in a simple directory structure:
 ```
 repo/
 ├── pile/    ← active notes
-└── trash/   ← deleted notes
+└── trash/   ← deleted notes (GitHub only, for recovery)
 ```
-
-- Both directories are synced.
-- If a note exists in `trash/`, it is considered deleted everywhere.
-- Deletion always wins.
 
 No complex state management. No hidden metadata. Just files.
 
@@ -72,11 +68,11 @@ So that's what this app optimizes for.
 
 ## Why no restore?
 
-Deleting a note moves it to `trash/`. That's it.
-
 There is no restore button. No undo.
 
-If you really need something back, find it in `trash/` in your repo and copy the content into a new note.
+Deletion removes the note from the app immediately. If GitHub Sync is enabled, the file is moved to `trash/` in your repository — not permanently deleted, just out of the way.
+
+If you really need something back, move it from `trash/` back to `pile/` in your repo and sync.
 
 This is intentional. Deletion should feel final. It keeps your pile clean.
 

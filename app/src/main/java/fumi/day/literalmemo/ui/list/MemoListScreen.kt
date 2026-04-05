@@ -265,7 +265,7 @@ fun MemoListScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.trashMemo(memo.fileName)
+                        viewModel.deleteMemo(memo.fileName)
                         memoToDelete = null
                     }
                 ) {

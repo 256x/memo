@@ -132,8 +132,10 @@ class MemoEditViewModel @Inject constructor(
     fun deleteMemo(onComplete: () -> Unit) {
         val fileNameToDelete = _currentFileName.value
         viewModelScope.launch(Dispatchers.IO) {
-            fileNameToDelete?.let { memoRepository.trash(it) }
-            syncManager.launchSync()
+            if (fileNameToDelete != null) {
+                memoRepository.delete(fileNameToDelete)
+                syncManager.moveToRemoteTrash(fileNameToDelete)
+            }
             withContext(Dispatchers.Main) {
                 onComplete()
             }

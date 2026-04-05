@@ -28,7 +28,7 @@ No folders. No tags. No links. Just throw your thoughts into the pile and search
 2. Tap the **Delete** button (trash icon)
 3. Confirm deletion
 
-Deleted memos are moved to trash (not permanently deleted).
+Deleted memos are removed from the app. If GitHub Sync is enabled, they are moved to the `trash/` folder in your repository instead of being permanently deleted.
 
 ## Sharing Links
 
@@ -140,7 +140,8 @@ return M
 - Check if the files exist in your GitHub repository
 - Try manually triggering sync from Settings
 
-### Lost content?
+### Lost a memo?
 
-- Check your GitHub repository's commit history
-- All changes are preserved in Git
+Deleted memos are moved to the `trash/` folder in your GitHub repository. To restore one, move the file from `trash/` back to `pile/` directly in GitHub, then sync the app.
+
+All changes are also preserved in Git history if you need to recover older content.
