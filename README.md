@@ -92,11 +92,7 @@ Literal Memo is not about organizing notes.
 
 It's about not needing to.
 
-## Design Constraints
-
-This app is intentionally simple.
-
-If it needs heavy documentation or multiple language support, it's already too complicated.
+This app is intentionally simple. If a feature requires explaining in multiple steps, it probably doesn't belong here.
 
 ## Usage
 
@@ -124,12 +120,9 @@ For detailed sync behavior, see [User Guide](docs/USER_GUIDE.md).
 
 ## Development
 
-Built with Kotlin and Jetpack Compose.
-
-## Build
-
 - Kotlin / Jetpack Compose
 - Target: Android 8.0+
+- No Google APIs. No Firebase. No tracking.
 
 ## License
 

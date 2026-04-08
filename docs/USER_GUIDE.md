@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-Literal Memo is a simple note-taking app inspired by [howm](https://howm.osdn.jp/).
+Literal Memo is a simple note-taking app inspired by [howm](https://kaoriya.github.io/howm/).
 
 **Philosophy**: Write. Throw. Search.
 
@@ -12,23 +12,36 @@ No folders. No tags. No links. Just throw your thoughts into the pile and search
 
 ### Creating a Memo
 
-1. Tap the **+** button
+1. Tap the **+** FAB
 2. Write your memo (Markdown supported)
-3. Navigate back to save
+3. Tap the back arrow or navigate back to save
 
 ### Editing a Memo
 
-1. Tap a memo from the list
-2. Tap the **Edit** button (pencil icon) or FAB
-3. Edit and navigate back to save
+1. Tap a memo from the list — it opens directly in edit mode
+2. Edit your content
+3. Tap the back arrow to save and sync
+
+Use the **FAB** (eye icon) to switch to preview mode. Tap it again (pencil icon) to return to editing.
+
+### Markdown Toolbar
+
+While editing, a toolbar appears above the keyboard with shortcuts for common Markdown formatting (bold, italic, headers, links, etc.).
 
 ### Deleting a Memo
 
-1. Open a memo
-2. Tap the **Delete** button (trash icon)
-3. Confirm deletion
+**From the list**: Swipe left on a memo → confirm in the dialog.
 
-Deleted memos are removed from the app. If GitHub Sync is enabled, they are moved to the `trash/` folder in your repository instead of being permanently deleted.
+**From the edit screen**: Tap the **Delete** button (trash icon, top right) → confirm.
+
+Deleted memos are removed from the app. If GitHub Sync is enabled, they are moved to the `trash/` folder in your repository — not permanently deleted, just out of the way.
+
+## Searching Memos
+
+Type in the **search bar** at the bottom of the list screen and tap the search key.
+
+- Results show inline snippets with matching text highlighted
+- Tap **Back** to clear the search and return to the full list
 
 ## Sharing Links
 
