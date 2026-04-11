@@ -124,6 +124,8 @@ For detailed sync behavior, see [User Guide](docs/USER_GUIDE.md).
 - Target: Android 8.0+
 - No Google APIs. No Firebase. No tracking.
 
+This app was built with substantial assistance from [Claude](https://claude.ai) (Anthropic). AI was involved throughout development, including writing code.
+
 ## License
 
 MIT
