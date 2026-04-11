@@ -13,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import dagger.hilt.android.qualifiers.ApplicationContext
+import fumi.day.literalmemo.data.git.GitForge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,8 @@ data class UserPrefs(
     val gitHubEnabled: Boolean = false,
     val gitHubToken: String = "",
     val gitHubRepo: String = "",
+    val gitForge: GitForge = GitForge.GITHUB,
+    val gitHost: String = "",
     val lastSyncedAt: Long? = null,
     val lastSyncedShas: Map<String, String> = emptyMap()
 )
@@ -69,6 +72,8 @@ class UserPreferences @Inject constructor(
         val FAB_ON_LEFT = booleanPreferencesKey("fab_on_left")
         val GITHUB_ENABLED = booleanPreferencesKey("github_enabled")
         val GITHUB_REPO = stringPreferencesKey("github_repo")
+        val GIT_FORGE = stringPreferencesKey("git_forge")
+        val GIT_HOST = stringPreferencesKey("git_host")
         val LAST_SYNCED_AT = longPreferencesKey("last_synced_at")
         val LAST_SYNCED_SHAS = stringPreferencesKey("last_synced_shas")
     }
@@ -87,6 +92,8 @@ class UserPreferences @Inject constructor(
             gitHubEnabled = prefs[Keys.GITHUB_ENABLED] ?: false,
             gitHubToken = token,
             gitHubRepo = prefs[Keys.GITHUB_REPO] ?: "",
+            gitForge = if (prefs[Keys.GIT_FORGE] == "gitea") GitForge.GITEA else GitForge.GITHUB,
+            gitHost = prefs[Keys.GIT_HOST] ?: "",
             lastSyncedAt = prefs[Keys.LAST_SYNCED_AT],
             lastSyncedShas = prefs[Keys.LAST_SYNCED_SHAS]?.let { parseShas(it) } ?: emptyMap()
         )
@@ -137,10 +144,12 @@ class UserPreferences @Inject constructor(
         }
     }
 
-    suspend fun setGitHubConfig(enabled: Boolean, token: String, repo: String) {
+    suspend fun setGitConfig(enabled: Boolean, token: String, repo: String, forge: GitForge, host: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.GITHUB_ENABLED] = enabled
             prefs[Keys.GITHUB_REPO] = repo
+            prefs[Keys.GIT_FORGE] = forge.name.lowercase()
+            prefs[Keys.GIT_HOST] = host
         }
         withContext(Dispatchers.IO) {
             encryptedPrefs.edit().putString("github_token", token).apply()

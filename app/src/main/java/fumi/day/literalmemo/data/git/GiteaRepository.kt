@@ -1,8 +1,6 @@
-package fumi.day.literalmemo.data.github
+package fumi.day.literalmemo.data.git
 
 import android.util.Base64
-import fumi.day.literalmemo.data.git.GitForgeApi
-import fumi.day.literalmemo.data.git.RemoteFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -11,15 +9,12 @@ import java.io.BufferedReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class GitHubRepository @Inject constructor() : GitForgeApi {
+class GiteaRepository(host: String) : GitForgeApi {
 
-    private val baseUrl = "https://api.github.com"
+    private val baseUrl = "${host.trimEnd('/')}/api/v1"
 
-    private suspend fun makeRequest(
+    private suspend fun request(
         method: String,
         url: String,
         token: String,
@@ -29,22 +24,19 @@ class GitHubRepository @Inject constructor() : GitForgeApi {
         try {
             connection.requestMethod = method
             connection.setRequestProperty("Authorization", "Bearer $token")
-            connection.setRequestProperty("Accept", "application/vnd.github+json")
-            connection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
+            connection.setRequestProperty("Accept", "application/json")
             if (body != null) {
                 connection.doOutput = true
                 connection.setRequestProperty("Content-Type", "application/json")
-                OutputStreamWriter(connection.outputStream).use { writer ->
-                    writer.write(body)
-                }
+                OutputStreamWriter(connection.outputStream).use { it.write(body) }
             }
-            val responseCode = connection.responseCode
-            val responseBody = try {
+            val code = connection.responseCode
+            val text = try {
                 connection.inputStream.bufferedReader().use(BufferedReader::readText)
             } catch (e: Exception) {
                 connection.errorStream?.bufferedReader()?.use(BufferedReader::readText) ?: ""
             }
-            Pair(responseCode, responseBody)
+            Pair(code, text)
         } finally {
             connection.disconnect()
         }
@@ -58,17 +50,14 @@ class GitHubRepository @Inject constructor() : GitForgeApi {
 
     private suspend fun listFilesInDir(token: String, repo: String, dir: String): Result<List<RemoteFile>> {
         return try {
-            val (code, body) = makeRequest("GET", "$baseUrl/repos/$repo/contents/$dir", token)
+            val (code, body) = request("GET", "$baseUrl/repos/$repo/contents/$dir", token)
             when (code) {
                 200 -> {
-                    val files = mutableListOf<RemoteFile>()
                     val array = JSONArray(body)
-                    for (i in 0 until array.length()) {
-                        val obj = array.getJSONObject(i)
-                        if (obj.getString("name").endsWith(".md")) {
-                            files.add(RemoteFile(path = obj.getString("path"), sha = obj.getString("sha")))
-                        }
-                    }
+                    val files = (0 until array.length())
+                        .map { array.getJSONObject(it) }
+                        .filter { it.getString("name").endsWith(".md") }
+                        .map { RemoteFile(path = it.getString("path"), sha = it.getString("sha")) }
                     Result.success(files)
                 }
                 404 -> Result.success(emptyList())
@@ -81,7 +70,7 @@ class GitHubRepository @Inject constructor() : GitForgeApi {
 
     override suspend fun getFile(token: String, repo: String, path: String): Result<RemoteFile> {
         return try {
-            val (code, body) = makeRequest("GET", "$baseUrl/repos/$repo/contents/$path", token)
+            val (code, body) = request("GET", "$baseUrl/repos/$repo/contents/$path", token)
             when (code) {
                 200 -> {
                     val obj = JSONObject(body)
@@ -96,14 +85,7 @@ class GitHubRepository @Inject constructor() : GitForgeApi {
         }
     }
 
-    override suspend fun putFile(
-        token: String,
-        repo: String,
-        path: String,
-        content: String,
-        sha: String?,
-        message: String
-    ): Result<RemoteFile> {
+    override suspend fun putFile(token: String, repo: String, path: String, content: String, sha: String?, message: String): Result<RemoteFile> {
         return try {
             val encoded = Base64.encodeToString(content.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
             val bodyObj = JSONObject().apply {
@@ -111,7 +93,7 @@ class GitHubRepository @Inject constructor() : GitForgeApi {
                 put("content", encoded)
                 if (sha != null) put("sha", sha)
             }
-            val (code, body) = makeRequest("PUT", "$baseUrl/repos/$repo/contents/$path", token, bodyObj.toString())
+            val (code, body) = request("PUT", "$baseUrl/repos/$repo/contents/$path", token, bodyObj.toString())
             when (code) {
                 200, 201 -> {
                     val obj = JSONObject(body).getJSONObject("content")
@@ -124,19 +106,13 @@ class GitHubRepository @Inject constructor() : GitForgeApi {
         }
     }
 
-    override suspend fun deleteFile(
-        token: String,
-        repo: String,
-        path: String,
-        sha: String,
-        message: String
-    ): Result<Unit> {
+    override suspend fun deleteFile(token: String, repo: String, path: String, sha: String, message: String): Result<Unit> {
         return try {
             val bodyObj = JSONObject().apply {
                 put("message", message)
                 put("sha", sha)
             }
-            val (code, _) = makeRequest("DELETE", "$baseUrl/repos/$repo/contents/$path", token, bodyObj.toString())
+            val (code, _) = request("DELETE", "$baseUrl/repos/$repo/contents/$path", token, bodyObj.toString())
             when (code) {
                 200 -> Result.success(Unit)
                 else -> Result.failure(Exception("Failed to delete file: $code"))

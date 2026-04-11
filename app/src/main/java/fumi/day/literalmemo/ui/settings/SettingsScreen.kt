@@ -65,6 +65,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import fumi.day.literalmemo.BuildConfig
+import fumi.day.literalmemo.data.git.GitForge
 import fumi.day.literalmemo.data.prefs.AppFont
 import fumi.day.literalmemo.ui.theme.LocalAppTheme
 import fumi.day.literalmemo.ui.theme.parseColor
@@ -82,7 +83,7 @@ fun SettingsScreen(
     val appTheme = LocalAppTheme.current
 
     var showColorPicker by remember { mutableStateOf<ColorPickerTarget?>(null) }
-    var showGitHubDialog by remember { mutableStateOf(false) }
+    var showGitDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -125,13 +126,13 @@ fun SettingsScreen(
                 onFabOnLeftChange = viewModel::setFabOnLeft
             )
 
-            GitHubSyncCard(
+            GitSyncCard(
                 userPrefs = userPrefs,
                 isSyncing = isSyncing,
                 accentColor = appTheme.accentColor,
-                onConnectClick = { showGitHubDialog = true },
+                onConnectClick = { showGitDialog = true },
                 onSyncNowClick = viewModel::syncNow,
-                onEditClick = { showGitHubDialog = true },
+                onEditClick = { showGitDialog = true },
                 onDisconnectClick = viewModel::disconnectGitHub
             )
 
@@ -164,15 +165,17 @@ fun SettingsScreen(
         )
     }
 
-    if (showGitHubDialog) {
-        GitHubSettingsDialog(
+    if (showGitDialog) {
+        GitSettingsDialog(
+            initialForge = userPrefs.gitForge,
+            initialHost = userPrefs.gitHost,
             initialToken = userPrefs.gitHubToken,
             initialRepo = userPrefs.gitHubRepo,
-            onSave = { token, repo ->
-                viewModel.saveGitHubConfig(token, repo)
-                showGitHubDialog = false
+            onSave = { forge, host, token, repo ->
+                viewModel.saveGitConfig(forge, host, token, repo)
+                showGitDialog = false
             },
-            onDismiss = { showGitHubDialog = false }
+            onDismiss = { showGitDialog = false }
         )
     }
 
@@ -504,7 +507,7 @@ private fun colorToHex(color: Color): String {
 }
 
 @Composable
-private fun GitHubSyncCard(
+private fun GitSyncCard(
     userPrefs: fumi.day.literalmemo.data.prefs.UserPrefs,
     isSyncing: Boolean,
     accentColor: Color,
@@ -519,7 +522,7 @@ private fun GitHubSyncCard(
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = "GitHub Sync",
+                text = "Git Sync",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -530,13 +533,16 @@ private fun GitHubSyncCard(
                 Button(
                     onClick = onConnectClick,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = accentColor
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                 ) {
-                    Text("Connect GitHub")
+                    Text("Connect")
                 }
             } else {
+                Text(
+                    text = if (userPrefs.gitForge == GitForge.GITEA) "Gitea / Forgejo" else "GitHub",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Text(
                     text = userPrefs.gitHubRepo,
                     style = MaterialTheme.typography.bodySmall,
@@ -575,27 +581,51 @@ private fun GitHubSyncCard(
                         Text("Disconnect")
                     }
                 }
-
             }
         }
     }
 }
 
 @Composable
-private fun GitHubSettingsDialog(
+private fun GitSettingsDialog(
+    initialForge: GitForge,
+    initialHost: String,
     initialToken: String,
     initialRepo: String,
-    onSave: (String, String) -> Unit,
+    onSave: (GitForge, String, String, String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var forge by remember { mutableStateOf(initialForge) }
+    var host by remember { mutableStateOf(initialHost) }
     var token by remember { mutableStateOf(initialToken) }
     var repo by remember { mutableStateOf(initialRepo) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("GitHub Settings") },
+        title = { Text("Git Sync") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = forge == GitForge.GITHUB,
+                        onClick = { forge = GitForge.GITHUB },
+                        label = { Text("GitHub") }
+                    )
+                    FilterChip(
+                        selected = forge == GitForge.GITEA,
+                        onClick = { forge = GitForge.GITEA },
+                        label = { Text("Gitea / Forgejo") }
+                    )
+                }
+                if (forge == GitForge.GITEA) {
+                    OutlinedTextField(
+                        value = host,
+                        onValueChange = { host = it },
+                        label = { Text("Host (e.g. https://codeberg.org)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 OutlinedTextField(
                     value = token,
                     onValueChange = { token = it },
@@ -614,9 +644,10 @@ private fun GitHubSettingsDialog(
             }
         },
         confirmButton = {
+            val hostValid = forge == GitForge.GITHUB || host.isNotBlank()
             TextButton(
-                onClick = { onSave(token, repo) },
-                enabled = token.isNotBlank() && repo.contains("/")
+                onClick = { onSave(forge, host, token, repo) },
+                enabled = token.isNotBlank() && repo.contains("/") && hostValid
             ) {
                 Text("Save")
             }

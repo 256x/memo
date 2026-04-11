@@ -2,6 +2,9 @@ package fumi.day.literalmemo.data.github
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import fumi.day.literalmemo.data.git.GitForge
+import fumi.day.literalmemo.data.git.GitForgeApi
+import fumi.day.literalmemo.data.git.GiteaRepository
 import fumi.day.literalmemo.data.prefs.UserPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,17 +62,27 @@ class GitHubSyncManager @Inject constructor(
             _isSyncing.value = false
         }
     }
+
     private val pileDir: File by lazy {
         File(context.filesDir, "pile").also { it.mkdirs() }
     }
 
+    private fun resolveApi(forge: GitForge, host: String): GitForgeApi =
+        when (forge) {
+            GitForge.GITHUB -> gitHubRepository
+            GitForge.GITEA -> GiteaRepository(host)
+        }
+
     suspend fun moveToRemoteTrash(fileName: String) {
         val prefs = userPreferences.userPrefs.first()
         if (!prefs.gitHubEnabled || prefs.gitHubToken.isBlank() || prefs.gitHubRepo.isBlank()) return
-        val remoteFiles = gitHubRepository.listPileFiles(prefs.gitHubToken, prefs.gitHubRepo).getOrNull() ?: return
+        if (prefs.gitForge == GitForge.GITEA && prefs.gitHost.isBlank()) return
+
+        val api = resolveApi(prefs.gitForge, prefs.gitHost)
+        val remoteFiles = api.listPileFiles(prefs.gitHubToken, prefs.gitHubRepo).getOrNull() ?: return
         val remoteFile = remoteFiles.find { it.path.substringAfterLast("/") == fileName } ?: return
-        val content = gitHubRepository.getFile(prefs.gitHubToken, prefs.gitHubRepo, remoteFile.path).getOrNull()?.content ?: return
-        gitHubRepository.moveToTrash(prefs.gitHubToken, prefs.gitHubRepo, fileName, remoteFile.sha, content)
+        val content = api.getFile(prefs.gitHubToken, prefs.gitHubRepo, remoteFile.path).getOrNull()?.content ?: return
+        api.moveToTrash(prefs.gitHubToken, prefs.gitHubRepo, fileName, remoteFile.sha, content)
     }
 
     suspend fun syncIfEnabled(): SyncResult? = withContext(Dispatchers.IO) {
@@ -77,7 +90,12 @@ class GitHubSyncManager @Inject constructor(
         if (!prefs.gitHubEnabled || prefs.gitHubToken.isBlank() || prefs.gitHubRepo.isBlank()) {
             return@withContext null
         }
-        val result = sync(prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt, prefs.lastSyncedShas)
+        if (prefs.gitForge == GitForge.GITEA && prefs.gitHost.isBlank()) {
+            return@withContext null
+        }
+
+        val api = resolveApi(prefs.gitForge, prefs.gitHost)
+        val result = sync(api, prefs.gitHubToken, prefs.gitHubRepo, prefs.lastSyncedAt, prefs.lastSyncedShas)
         if (result.errors.isEmpty()) {
             userPreferences.setLastSyncedAt(System.currentTimeMillis())
             userPreferences.setLastSyncedShas(result.remoteShas)
@@ -85,7 +103,7 @@ class GitHubSyncManager @Inject constructor(
         result
     }
 
-    suspend fun sync(token: String, repo: String, lastSyncedAt: Long?, lastSyncedShas: Map<String, String> = emptyMap()): SyncResult = withContext(Dispatchers.IO) {
+    suspend fun sync(api: GitForgeApi, token: String, repo: String, lastSyncedAt: Long?, lastSyncedShas: Map<String, String> = emptyMap()): SyncResult = withContext(Dispatchers.IO) {
         var uploaded = 0
         var downloaded = 0
         val errors = mutableListOf<String>()
@@ -97,7 +115,7 @@ class GitHubSyncManager @Inject constructor(
                 ?.associateBy { it.name }
                 ?: emptyMap()
 
-            val remotePileResult = gitHubRepository.listPileFiles(token, repo)
+            val remotePileResult = api.listPileFiles(token, repo)
             if (remotePileResult.isFailure) {
                 errors.add("Failed to connect")
                 return@withContext SyncResult(errors = errors)
@@ -105,7 +123,7 @@ class GitHubSyncManager @Inject constructor(
             val remotePileFiles = remotePileResult.getOrThrow().associateBy { it.path.substringAfterLast("/") }
             newRemoteShas = remotePileFiles.mapValues { it.value.sha }
 
-            val remoteTrashFiles = (gitHubRepository.listTrashFiles(token, repo).getOrNull() ?: emptyList())
+            val remoteTrashFiles = (api.listTrashFiles(token, repo).getOrNull() ?: emptyList())
                 .associateBy { it.path.substringAfterLast("/") }
 
             val allFileNames = (localPileFiles.keys + remotePileFiles.keys + remoteTrashFiles.keys).toSet()
@@ -130,23 +148,23 @@ class GitHubSyncManager @Inject constructor(
                             } else {
                                 // New local file → upload
                                 val content = localPileFiles[fileName]!!.readText(Charsets.UTF_8)
-                                val result = gitHubRepository.putFile(token, repo, "pile/$fileName", content, message = "Add $fileName")
+                                val result = api.putFile(token, repo, "pile/$fileName", content, message = "Add $fileName")
                                 if (result.isSuccess) uploaded++
                             }
                         }
 
                         !inLocalPile && inRemotePile -> {
                             if (knownSha != null) {
-                                // Deleted locally → move to remote trash (safety net if moveToRemoteTrash failed)
+                                // Deleted locally → move to remote trash
                                 val remoteFile = remotePileFiles[fileName]!!
-                                val content = gitHubRepository.getFile(token, repo, remoteFile.path).getOrNull()?.content
+                                val content = api.getFile(token, repo, remoteFile.path).getOrNull()?.content
                                 if (content != null) {
-                                    gitHubRepository.moveToTrash(token, repo, fileName, remoteFile.sha, content)
+                                    api.moveToTrash(token, repo, fileName, remoteFile.sha, content)
                                 }
                             } else {
                                 // New remote file → download
                                 val remoteFile = remotePileFiles[fileName]!!
-                                val contentResult = gitHubRepository.getFile(token, repo, remoteFile.path)
+                                val contentResult = api.getFile(token, repo, remoteFile.path)
                                 if (contentResult.isSuccess) {
                                     File(pileDir, fileName).writeText(contentResult.getOrThrow().content, Charsets.UTF_8)
                                     downloaded++
@@ -159,7 +177,7 @@ class GitHubSyncManager @Inject constructor(
                             val remoteFile = remotePileFiles[fileName]!!
                             val localContent = localFile.readText(Charsets.UTF_8)
 
-                            val remoteContentResult = gitHubRepository.getFile(token, repo, remoteFile.path)
+                            val remoteContentResult = api.getFile(token, repo, remoteFile.path)
                             if (remoteContentResult.isSuccess) {
                                 val remoteContent = remoteContentResult.getOrThrow().content
                                 if (localContent != remoteContent) {
@@ -175,7 +193,7 @@ class GitHubSyncManager @Inject constructor(
                                             downloaded++
                                         }
                                         localChanged -> {
-                                            val result = gitHubRepository.putFile(token, repo, "pile/$fileName", localContent, sha = remoteFile.sha, message = "Update $fileName")
+                                            val result = api.putFile(token, repo, "pile/$fileName", localContent, sha = remoteFile.sha, message = "Update $fileName")
                                             if (result.isSuccess) uploaded++
                                         }
                                         else -> {
