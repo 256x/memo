@@ -157,6 +157,13 @@ class UserPreferences @Inject constructor(
         _gitHubToken.value = token
     }
 
+    suspend fun resetSyncState() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(Keys.LAST_SYNCED_AT)
+            prefs.remove(Keys.LAST_SYNCED_SHAS)
+        }
+    }
+
     suspend fun setLastSyncedAt(timestamp: Long) {
         context.dataStore.edit { prefs ->
             prefs[Keys.LAST_SYNCED_AT] = timestamp

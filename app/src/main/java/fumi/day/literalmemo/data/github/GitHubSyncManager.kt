@@ -73,6 +73,10 @@ class GitHubSyncManager @Inject constructor(
             GitForge.GITEA -> GiteaRepository(host)
         }
 
+    fun clearLocalData() {
+        pileDir.listFiles()?.forEach { it.delete() }
+    }
+
     suspend fun moveToRemoteTrash(fileName: String) {
         val prefs = userPreferences.userPrefs.first()
         if (!prefs.gitHubEnabled || prefs.gitHubToken.isBlank() || prefs.gitHubRepo.isBlank()) return

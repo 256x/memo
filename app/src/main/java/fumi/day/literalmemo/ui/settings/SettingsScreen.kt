@@ -599,6 +599,9 @@ private fun GitSettingsDialog(
     var host by remember { mutableStateOf(initialHost) }
     var token by remember { mutableStateOf(initialToken) }
     var repo by remember { mutableStateOf(initialRepo) }
+    val repoWillChange = initialRepo.isNotBlank() && (
+        forge != initialForge || host != initialHost || repo != initialRepo
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -641,6 +644,13 @@ private fun GitSettingsDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (repoWillChange) {
+                    Text(
+                        text = "Switching repositories will remove all local data. It will be re-synced from the new repository.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         },
         confirmButton = {

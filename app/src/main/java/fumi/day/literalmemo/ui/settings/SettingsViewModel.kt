@@ -73,6 +73,14 @@ class SettingsViewModel @Inject constructor(
 
     fun saveGitConfig(forge: GitForge, host: String, token: String, repo: String) {
         viewModelScope.launch {
+            val current = userPreferences.userPrefs.first()
+            val repoChanged = current.gitHubRepo.isNotBlank() && (
+                forge != current.gitForge || host != current.gitHost || repo != current.gitHubRepo
+            )
+            if (repoChanged) {
+                syncManager.clearLocalData()
+                userPreferences.resetSyncState()
+            }
             userPreferences.setGitConfig(
                 enabled = token.isNotBlank() && repo.isNotBlank(),
                 token = token,
