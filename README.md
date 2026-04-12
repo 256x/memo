@@ -5,7 +5,7 @@ Write. Throw. Search.
 A minimalist text-based note app with Git sync.
 
 <p>
-  <a href="https://github.com/256x/memo/releases/latest"><img src="https://img.shields.io/github/v/release/256x/memo?label=GitHub%20Release"></a>&nbsp;<a href="https://apt.izzysoft.de/packages/fumi.day.literalmemo"><img src="https://img.shields.io/badge/IzzyOnDroid-download-brightgreen"></a>&nbsp;<img src="https://img.shields.io/badge/Android-8%2B-blue">&nbsp;<img src="https://img.shields.io/badge/license-MIT-lightgrey">
+  <a href="https://github.com/256x/memo/releases/latest"><img src="https://img.shields.io/github/v/release/256x/memo?label=GitHub%20Release"></a>&nbsp;<img src="https://img.shields.io/badge/Android-8%2B-blue">&nbsp;<img src="https://img.shields.io/badge/license-MIT-lightgrey">
 </p>
 
 <p>
@@ -45,7 +45,7 @@ Just text.
 - **Write**: Minimal markdown editor with toolbar
 - **Search**: Full-text search across all memos
 - **Share**: Receive URLs and text from other apps
-- **Sync**: GitHub sync with auto-sync on launch and after editing
+- **Sync**: Git sync (GitHub, Gitea/Forgejo, Codeberg) with auto-sync on launch and after editing
 - **Customize**: Font, colors, left-hand mode
 ## How it works
 
@@ -53,7 +53,7 @@ Notes are stored in a simple directory structure:
 ```
 repo/
 ├── pile/    ← active notes
-└── trash/   ← deleted notes (GitHub only, for recovery)
+└── trash/   ← deleted notes (Git sync only, for recovery)
 ```
 
 No complex state management. No hidden metadata. Just files.
@@ -70,7 +70,7 @@ So that's what this app optimizes for.
 
 There is no restore button. No undo.
 
-Deletion removes the note from the app immediately. If GitHub Sync is enabled, the file is moved to `trash/` in your repository — not permanently deleted, just out of the way.
+Deletion removes the note from the app immediately. If Git Sync is enabled, the file is moved to `trash/` in your repository — not permanently deleted, just out of the way.
 
 If you really need something back, move it from `trash/` back to `pile/` in your repo and sync.
 
@@ -105,7 +105,7 @@ This app is intentionally simple. If a feature requires explaining in multiple s
 
 ### Multi-device Sync
 
-GitHub Sync keeps your memos synchronized across devices:
+Git Sync keeps your memos synchronized across devices:
 
 - Syncs automatically on app launch and after editing
 - Don't edit the same memo on multiple devices simultaneously
