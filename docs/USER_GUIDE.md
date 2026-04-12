@@ -34,7 +34,7 @@ While editing, a toolbar appears above the keyboard with shortcuts for common Ma
 
 **From the edit screen**: Tap the **Delete** button (trash icon, top right) → confirm.
 
-Deleted memos are removed from the app. If GitHub Sync is enabled, they are moved to the `trash/` folder in your repository — not permanently deleted, just out of the way.
+Deleted memos are removed from the app. If Git Sync is enabled, they are moved to the `trash/` folder in your repository — not permanently deleted, just out of the way.
 
 ## Searching Memos
 
@@ -62,16 +62,26 @@ You can share URLs or text from other apps directly to Literal Memo:
 
 This is useful for "read later" workflow: share links on the go, read them on your PC later.
 
-## GitHub Sync
+## Git Sync
 
-### Setup
+Supports **GitHub**, **Gitea/Forgejo** (including Codeberg), and any compatible Git forge.
+
+### Setup (GitHub)
 
 1. Create a **private** repository on GitHub (e.g., `username/literalmemo`)
 2. Create a Personal Access Token:
    - Go to GitHub → Settings → Developer settings → Personal access tokens
    - Generate a token with `repo` scope
 3. In Literal Memo, go to **Settings**
-4. Enter your token and repository (format: `username/repo`)
+4. Select **GitHub**, enter your token and repository (format: `username/repo`)
+5. Tap **Sync**
+
+### Setup (Gitea / Forgejo / Codeberg)
+
+1. Create a **private** repository on your Gitea/Forgejo instance (e.g., Codeberg)
+2. Create an access token in your account settings
+3. In Literal Memo, go to **Settings**
+4. Select **Gitea/Forgejo**, enter the host URL (e.g., `codeberg.org`), token, and repository
 5. Tap **Sync**
 
 ### How Sync Works
@@ -81,7 +91,11 @@ This is useful for "read later" workflow: share links on the go, read them on yo
   - When returning to the app (foreground)
   - After saving or deleting a memo
 - **Local-first**: Your edits are saved locally first, then synced
-- **Remote-authoritative**: After sync, GitHub has the authoritative version
+- **Remote-authoritative**: After sync, the remote repository has the authoritative version
+
+### Switching Repositories
+
+If you change the forge, host, or repository, all local data is cleared on the next sync. The app will then download everything from the new repository. A warning is shown before this happens.
 
 ### Multi-device Usage
 
@@ -105,7 +119,7 @@ This is by design. For simple memos, this is usually fine. If you need to recove
 
 If you accidentally lose content:
 
-1. Go to your GitHub repository
+1. Go to your repository
 2. Click on the file → History
 3. Find the commit with your content
 4. Copy or revert as needed
@@ -143,18 +157,19 @@ return M
 ### Sync not working?
 
 - Check your internet connection
-- Verify your token has `repo` scope
+- Verify your token has the required scope (`repo` for GitHub, appropriate permissions for Gitea/Forgejo)
 - Make sure the repository exists and is accessible
-- Check Settings to confirm GitHub is connected
+- For Gitea/Forgejo, verify the host URL is correct
+- Check Settings to confirm Git Sync is connected
 
 ### Memos not appearing on other device?
 
 - Wait a few seconds after launch for sync to complete
-- Check if the files exist in your GitHub repository
+- Check if the files exist in your repository
 - Try manually triggering sync from Settings
 
 ### Lost a memo?
 
-Deleted memos are moved to the `trash/` folder in your GitHub repository. To restore one, move the file from `trash/` back to `pile/` directly in GitHub, then sync the app.
+Deleted memos are moved to the `trash/` folder in your repository. To restore one, move the file from `trash/` back to `pile/` directly in your repository, then sync the app.
 
 All changes are also preserved in Git history if you need to recover older content.
