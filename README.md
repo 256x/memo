@@ -132,11 +132,12 @@ MIT
 
 ## PC Scripts
 
-A simple script to create a new memo from terminal:
-```bash
-#!/bin/bash
-cd "$(dirname "$0")/../pile" || exit 1
-nvim "$(date -u +%Y%m%d_%H%M%S).md"
-```
+The `scripts/` directory has a few extras for terminal and editor use:
 
-See `scripts/new-memo.sh`. Tweak it however you like — you know what you're doing.
+- `new-memo.sh` — create a new memo from terminal
+- `search-memo.sh` — search memos with fzf
+- `sync-memo.sh` — sync pile with remote repository
+- `literalmemo.vim` — Vim integration (new / list / search)
+- `literalmemo.lua` — Neovim integration via fzf-lua
+
+See [User Guide](./docs/USER_GUIDE.md) for details.
