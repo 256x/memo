@@ -111,7 +111,7 @@ class GitHubSyncManager @Inject constructor(
         var uploaded = 0
         var downloaded = 0
         val errors = mutableListOf<String>()
-        var newRemoteShas: Map<String, String> = emptyMap()
+        val newRemoteShas = mutableMapOf<String, String>()
 
         try {
             val localPileFiles = pileDir.listFiles()
@@ -125,7 +125,6 @@ class GitHubSyncManager @Inject constructor(
                 return@withContext SyncResult(errors = errors)
             }
             val remotePileFiles = remotePileResult.getOrThrow().associateBy { it.path.substringAfterLast("/") }
-            newRemoteShas = remotePileFiles.mapValues { it.value.sha }
 
             val remoteTrashFiles = (api.listTrashFiles(token, repo).getOrNull() ?: emptyList())
                 .associateBy { it.path.substringAfterLast("/") }
@@ -153,7 +152,10 @@ class GitHubSyncManager @Inject constructor(
                                 // New local file → upload
                                 val content = localPileFiles[fileName]!!.readText(Charsets.UTF_8)
                                 val result = api.putFile(token, repo, "pile/$fileName", content, message = "Add $fileName")
-                                if (result.isSuccess) uploaded++
+                                if (result.isSuccess) {
+                                    uploaded++
+                                    result.getOrNull()?.sha?.let { newRemoteShas[fileName] = it }
+                                }
                             }
                         }
 
@@ -171,8 +173,10 @@ class GitHubSyncManager @Inject constructor(
                                 val contentResult = api.getFile(token, repo, remoteFile.path)
                                 if (contentResult.isSuccess) {
                                     File(pileDir, fileName).writeText(contentResult.getOrThrow().content, Charsets.UTF_8)
+                                    newRemoteShas[fileName] = remoteFile.sha
                                     downloaded++
                                 }
+                                // download failure: SHA not tracked → retried on next sync
                             }
                         }
 
@@ -194,18 +198,29 @@ class GitHubSyncManager @Inject constructor(
                                             val conflictName = fileName.removeSuffix(".md") + "_conflict_$timestamp.md"
                                             File(pileDir, conflictName).writeText(localContent, Charsets.UTF_8)
                                             localFile.writeText(remoteContent, Charsets.UTF_8)
+                                            newRemoteShas[fileName] = remoteFile.sha
                                             downloaded++
                                         }
                                         localChanged -> {
                                             val result = api.putFile(token, repo, "pile/$fileName", localContent, sha = remoteFile.sha, message = "Update $fileName")
-                                            if (result.isSuccess) uploaded++
+                                            if (result.isSuccess) {
+                                                uploaded++
+                                                newRemoteShas[fileName] = result.getOrNull()?.sha ?: remoteFile.sha
+                                            } else {
+                                                newRemoteShas[fileName] = remoteFile.sha
+                                            }
                                         }
                                         else -> {
                                             localFile.writeText(remoteContent, Charsets.UTF_8)
+                                            newRemoteShas[fileName] = remoteFile.sha
                                             downloaded++
                                         }
                                     }
+                                } else {
+                                    newRemoteShas[fileName] = remoteFile.sha
                                 }
+                            } else {
+                                knownSha?.let { newRemoteShas[fileName] = it }
                             }
                         }
                     }
