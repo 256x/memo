@@ -24,7 +24,7 @@ android {
     
     signingConfigs {
         create("release") {
-            storeFile = file("C:/Users/fumi/Documents/AndroidKeys/literal-memo.jks")
+            storeFile = file("/home/fumi/Documents/AndroidKeys/literal-memo.jks")
             storePassword = localProperties["STORE_PASSWORD"].toString()
             keyAlias = localProperties["KEY_ALIAS"].toString()
             keyPassword = localProperties["KEY_PASSWORD"].toString()
