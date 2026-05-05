@@ -69,9 +69,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import fumi.day.literalmemo.domain.model.Memo
 import fumi.day.literalmemo.domain.model.firstLine
 import fumi.day.literalmemo.ui.theme.LocalAppTheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -432,10 +429,13 @@ private fun HighlightedSnippet(
     )
 }
 
-private val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+private val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
 private fun formatDate(timestamp: Long): String {
-    return dateFormatter.format(Date(timestamp))
+    return java.time.LocalDateTime.ofInstant(
+        java.time.Instant.ofEpochMilli(timestamp),
+        java.time.ZoneId.systemDefault()
+    ).format(dateFormatter)
 }
 
 private fun getSubtitleText(memos: List<Memo>, gitHubEnabled: Boolean, lastSyncedAt: Long?, syncError: String?): String {
