@@ -46,7 +46,7 @@ Just text.
 - **Search**: Full-text search across all memos
 - **Share**: Receive URLs and text from other apps
 - **Sync**: Git sync (GitHub, Gitea/Forgejo, Codeberg) with auto-sync on launch and after editing
-- **Customize**: Font, colors, left-hand mode
+- **Customize**: Font, colors, controls on left
 ## How it works
 
 Notes are stored in a simple directory structure:
