@@ -1,5 +1,7 @@
 package fumi.day.literalmemo.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -84,6 +86,7 @@ fun SettingsScreen(
 
     var showColorPicker by remember { mutableStateOf<ColorPickerTarget?>(null) }
     var showGitDialog by remember { mutableStateOf(false) }
+    var showPrivacyPolicy by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -142,7 +145,49 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
+            Text(
+                text = "Privacy Policy",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clickable { showPrivacyPolicy = true }
+            )
         }
+    }
+
+    if (showPrivacyPolicy) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyPolicy = false },
+            title = { Text("Privacy Policy") },
+            text = {
+                androidx.compose.foundation.lazy.LazyColumn {
+                    item {
+                        Text(
+                            text = """We do not collect, store, or share any personal data. All app data is stored locally on your device. We have no servers and no backend.
+
+Literal Memo includes an optional Git sync feature. If enabled, the app connects directly to a Git repository you specify and control (GitHub, Gitea, Forgejo, or Codeberg). Your data goes only to the repository you configure — not to us.
+
+We do not use any analytics, advertising, crash reporting, or third-party SDKs.
+
+All data remains on your device or in the Git repository you control. Access credentials (tokens) used for Git sync are stored in Android's encrypted storage and are never transmitted to us.
+
+Since we do not collect any data, there is nothing to retain or delete on our end. Uninstalling the app removes all locally stored data from your device.
+
+Our apps do not collect any personal information from anyone, including children under the age of 13.
+
+Contact: admin@fumi.day""",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPrivacyPolicy = false }) {
+                    Text("Close")
+                }
+            }
+        )
     }
 
     showColorPicker?.let { target ->
