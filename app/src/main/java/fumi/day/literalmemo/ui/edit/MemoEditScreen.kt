@@ -269,9 +269,29 @@ private fun applyToolbarAction(textFieldValue: TextFieldValue, action: ToolbarAc
 
     return if (action.isLinePrefix) {
         val lineStart = text.lastIndexOf('\n', start - 1) + 1
-        val newText = text.substring(0, lineStart) + action.prefix + text.substring(lineStart)
-        val newCursorPos = start + action.prefix.length
-        TextFieldValue(newText, TextRange(newCursorPos))
+
+        if (selectedText.contains('\n')) {
+            // Multi-line selection: prefix each line
+            val effectiveEnd = if (text.getOrNull(end - 1) == '\n') end - 1 else end
+            val lineEnd = text.indexOf('\n', effectiveEnd).let { if (it == -1) text.length else it }
+
+            val block = text.substring(lineStart, lineEnd)
+            val lines = block.split('\n')
+            val prefixedLines = if (action.label == "1.") {
+                lines.mapIndexed { i, line -> "${i + 1}. $line" }
+            } else {
+                lines.map { action.prefix + it }
+            }
+
+            val newBlock = prefixedLines.joinToString("\n")
+            TextFieldValue(
+                text = text.substring(0, lineStart) + newBlock + text.substring(lineEnd),
+                selection = TextRange(lineStart, lineStart + newBlock.length)
+            )
+        } else {
+            val newText = text.substring(0, lineStart) + action.prefix + text.substring(lineStart)
+            TextFieldValue(newText, TextRange(start + action.prefix.length))
+        }
     } else {
         val newText = text.substring(0, start) + action.prefix + selectedText + action.suffix + text.substring(end)
         val newCursorPos = if (selectedText.isEmpty()) {
