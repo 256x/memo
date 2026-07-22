@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.play.publisher)
 }
 
 android {
@@ -35,14 +36,14 @@ android {
         }
     }
     
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "fumi.day.literalmemo"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 17
-        versionName = "1.2.1"
+        targetSdk = 36
+        versionCode = 18
+        versionName = "1.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -113,4 +114,10 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+}
+
+play {
+    serviceAccountCredentials = file("/home/fumi/Documents/AndroidKeys/play-publisher.json")
+    defaultToAppBundles = true
+    track.set("internal")
 }
