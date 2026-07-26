@@ -48,6 +48,11 @@ class GitHubSyncManager @Inject constructor(
         appScope.launch { syncAndAwait() }
     }
 
+    /** Move to remote trash in the app-scoped coroutine so it survives navigation/ViewModel teardown. */
+    fun launchMoveToRemoteTrash(fileName: String) {
+        appScope.launch { moveToRemoteTrash(fileName) }
+    }
+
     suspend fun syncAndAwait(): SyncResult? {
         if (_isSyncing.value) return null
         _isSyncing.value = true

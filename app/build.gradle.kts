@@ -42,8 +42,8 @@ android {
         applicationId = "fumi.day.literalmemo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
-        versionName = "1.2.2"
+        versionCode = 19
+        versionName = "1.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -119,5 +119,5 @@ dependencies {
 play {
     serviceAccountCredentials = file("/home/fumi/Documents/AndroidKeys/play-publisher.json")
     defaultToAppBundles = true
-    track.set("internal")
+    track.set("production")
 }

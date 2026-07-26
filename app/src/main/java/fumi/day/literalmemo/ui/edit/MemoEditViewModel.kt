@@ -131,14 +131,19 @@ class MemoEditViewModel @Inject constructor(
 
     fun deleteMemo(onComplete: () -> Unit) {
         val fileNameToDelete = _currentFileName.value
-        viewModelScope.launch(Dispatchers.IO) {
-            if (fileNameToDelete != null) {
+        if (fileNameToDelete == null) {
+            onComplete()
+            return
+        }
+        viewModelScope.launch {
+            // Delete locally first, then return to the list immediately so the
+            // memo visibly disappears. The remote trash move runs in the sync
+            // manager's app scope, surviving this ViewModel's teardown.
+            withContext(Dispatchers.IO) {
                 memoRepository.delete(fileNameToDelete)
-                syncManager.moveToRemoteTrash(fileNameToDelete)
             }
-            withContext(Dispatchers.Main) {
-                onComplete()
-            }
+            syncManager.launchMoveToRemoteTrash(fileNameToDelete)
+            onComplete()
         }
     }
 
