@@ -9,6 +9,7 @@ import fumi.day.literalmemo.data.prefs.UserPreferences
 import fumi.day.literalmemo.data.prefs.UserPrefs
 import fumi.day.literalmemo.data.repository.MemoRepository
 import fumi.day.literalmemo.domain.model.Memo
+import fumi.day.literalmemo.domain.toggleTaskAt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -78,6 +79,13 @@ class MemoEditViewModel @Inject constructor(
 
     fun togglePreviewMode() {
         _isPreviewMode.value = !_isPreviewMode.value
+    }
+
+    /** Checks or unchecks the [index]-th task list item from preview mode, then persists it. */
+    fun toggleTask(index: Int) {
+        val updated = toggleTaskAt(_content.value, index) ?: return
+        _content.value = updated
+        save()
     }
 
     fun save() {

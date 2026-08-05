@@ -1,6 +1,13 @@
 package fumi.day.literalmemo.ui.edit
 
 import android.graphics.Typeface
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.text.style.StrikethroughSpan
+import android.view.View
 import android.widget.TextView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -39,6 +46,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -63,6 +71,7 @@ import io.noties.markwon.Markwon
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.ext.tasklist.TaskListPlugin
+import io.noties.markwon.ext.tasklist.TaskListSpan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,6 +194,7 @@ fun MemoEditScreen(
                         backgroundColor = backgroundColor,
                         fontSize = appTheme.fontSize,
                         fontFamily = userPrefs.font,
+                        onToggleTask = viewModel::toggleTask,
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
@@ -310,11 +320,13 @@ private fun MarkdownPreview(
     backgroundColor: Color,
     fontSize: Float,
     fontFamily: AppFont,
+    onToggleTask: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val textColorInt = textColor.toArgb()
     val backgroundColorInt = backgroundColor.toArgb()
+    val currentOnToggleTask by rememberUpdatedState(onToggleTask)
 
     val scopeOneTypeface = remember(context) {
         ResourcesCompat.getFont(context, R.font.scopeone)
@@ -338,6 +350,9 @@ private fun MarkdownPreview(
                 setTextColor(textColorInt)
                 textSize = fontSize
                 setPadding(48, 48, 48, 48)
+                // Task list items are tappable spans; suppress the tap highlight they would draw.
+                highlightColor = android.graphics.Color.TRANSPARENT
+                movementMethod = LinkMovementMethod.getInstance()
                 layoutParams = android.view.ViewGroup.LayoutParams(
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -353,8 +368,45 @@ private fun MarkdownPreview(
                 AppFont.DEFAULT -> Typeface.DEFAULT
                 AppFont.SCOPE_ONE -> scopeOneTypeface
             }
-            markwon.setMarkdown(textView, content)
+            markwon.setParsedMarkdown(
+                textView,
+                markwon.toMarkdown(content).withInteractiveTasks { currentOnToggleTask(it) }
+            )
         },
         modifier = modifier.verticalScroll(rememberScrollState())
     )
+}
+
+/**
+ * Makes each rendered task list item tappable and strikes through the ones already done.
+ * Items are indexed in document order, matching [fumi.day.literalmemo.domain.toggleTaskAt].
+ */
+private fun Spanned.withInteractiveTasks(onToggle: (Int) -> Unit): Spanned {
+    val spannable = SpannableStringBuilder(this)
+    val tasks = spannable.getSpans(0, spannable.length, TaskListSpan::class.java)
+        .sortedBy { spannable.getSpanStart(it) }
+
+    tasks.forEachIndexed { index, task ->
+        val start = spannable.getSpanStart(task)
+        val end = spannable.getSpanEnd(task)
+        if (start < 0 || end <= start) return@forEachIndexed
+
+        spannable.setSpan(
+            object : ClickableSpan() {
+                override fun onClick(widget: View) = onToggle(index)
+
+                // Keep the memo's own colors — a task item is not a link.
+                override fun updateDrawState(ds: TextPaint) = Unit
+            },
+            start,
+            end,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+
+        if (task.isDone) {
+            spannable.setSpan(StrikethroughSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+    }
+
+    return spannable
 }
