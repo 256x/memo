@@ -51,7 +51,7 @@ class MemoListViewModel @Inject constructor(
         )
 
     val isSyncing: StateFlow<Boolean> = syncManager.isSyncing
-    val syncError: StateFlow<String?> = syncManager.syncError
+    val syncErrors: StateFlow<List<String>> = syncManager.syncErrors
 
     fun executeSearch(query: String) {
         _searchQuery.value = query

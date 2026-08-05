@@ -3,8 +3,8 @@ package fumi.day.literalmemo.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import fumi.day.literalmemo.data.git.SyncResult
 import fumi.day.literalmemo.data.github.GitHubSyncManager
-import fumi.day.literalmemo.data.github.SyncResult
 import fumi.day.literalmemo.data.git.GitForge
 import fumi.day.literalmemo.data.prefs.AppFont
 import fumi.day.literalmemo.data.prefs.UserPreferences

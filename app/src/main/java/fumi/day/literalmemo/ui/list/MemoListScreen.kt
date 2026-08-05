@@ -19,7 +19,9 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -81,9 +83,10 @@ fun MemoListScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val userPrefs by viewModel.userPrefs.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
-    val syncError by viewModel.syncError.collectAsState()
+    val syncErrors by viewModel.syncErrors.collectAsState()
     val appTheme = LocalAppTheme.current
 
+    var showSyncErrors by remember { mutableStateOf(false) }
     var memoToDelete by remember { mutableStateOf<Memo?>(null) }
     var inputText by remember { mutableStateOf("") }
     val isSearching = searchQuery.isNotBlank()
@@ -131,14 +134,26 @@ fun MemoListScreen(
                                 },
                                 style = MaterialTheme.typography.titleMedium
                             )
+                            val hasSyncErrors = !isSearching && userPrefs.gitHubEnabled && syncErrors.isNotEmpty()
                             Text(
                                 text = if (isSearching) {
                                     "searching: $searchQuery"
                                 } else {
-                                    getSubtitleText(memos, userPrefs.gitHubEnabled, userPrefs.lastSyncedAt, syncError)
+                                    getSubtitleText(memos, userPrefs.gitHubEnabled, userPrefs.lastSyncedAt, syncErrors)
                                 },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (hasSyncErrors) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = if (hasSyncErrors) {
+                                    Modifier.clickable { showSyncErrors = true }
+                                } else {
+                                    Modifier
+                                }
                             )
                         }
                     },
@@ -272,6 +287,31 @@ fun MemoListScreen(
             dismissButton = {
                 TextButton(onClick = { memoToDelete = null }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showSyncErrors && syncErrors.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { showSyncErrors = false },
+            title = { Text("Sync failed") },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                ) {
+                    syncErrors.forEach { error ->
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSyncErrors = false }) {
+                    Text("Close")
                 }
             }
         )
@@ -438,10 +478,13 @@ private fun formatDate(timestamp: Long): String {
     ).format(dateFormatter)
 }
 
-private fun getSubtitleText(memos: List<Memo>, gitHubEnabled: Boolean, lastSyncedAt: Long?, syncError: String?): String {
+private fun getSubtitleText(memos: List<Memo>, gitHubEnabled: Boolean, lastSyncedAt: Long?, syncErrors: List<String>): String {
     return when {
+        gitHubEnabled && syncErrors.isNotEmpty() -> when (syncErrors.size) {
+            1 -> syncErrors.first()
+            else -> "${syncErrors.first()} (+${syncErrors.size - 1} more)"
+        }
         memos.isEmpty() -> "no memos yet"
-        gitHubEnabled && syncError != null -> "Sync failed: $syncError"
         gitHubEnabled && lastSyncedAt != null -> "synced ${formatDate(lastSyncedAt)}"
         else -> "updated ${formatDate(memos.maxOf { it.updatedAt })}"
     }

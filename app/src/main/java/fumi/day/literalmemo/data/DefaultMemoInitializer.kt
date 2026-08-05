@@ -3,18 +3,16 @@ package fumi.day.literalmemo.data
 import android.content.Context
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
+import fumi.day.literalmemo.di.PileDir
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DefaultMemoInitializer @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    @param:PileDir private val pileDir: File
 ) {
-    private val pileDir: File by lazy {
-        File(context.filesDir, "pile").also { it.mkdirs() }
-    }
-
     private val prefs by lazy {
         context.getSharedPreferences("literal_memo_init", Context.MODE_PRIVATE)
     }
