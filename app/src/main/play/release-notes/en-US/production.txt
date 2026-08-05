@@ -1,4 +1,4 @@
-Bug fixes and internal improvements.
+New: check off tasks straight from preview.
 
-- Deleting a memo now returns to the list immediately instead of waiting for Git sync
-- Remote trash sync now runs in the background and survives leaving the screen
+- Tap a checkbox in preview mode to tick it off; checked items are struck through
+- Internal improvements to list refresh and sync error reporting
