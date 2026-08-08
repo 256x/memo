@@ -41,6 +41,12 @@ class MemoEditViewModel @Inject constructor(
 
     private var originalContent: String = ""
 
+    /**
+     * Set once the memo is deleted. Popping back to the list takes the screen through
+     * `ON_STOP`, which autosaves — without this the autosave would write the file back.
+     */
+    private var isDeleted = false
+
     private val _currentFileName = MutableStateFlow(fileName)
     val currentFileName: StateFlow<String?> = _currentFileName.asStateFlow()
 
@@ -89,6 +95,7 @@ class MemoEditViewModel @Inject constructor(
     }
 
     fun save() {
+        if (isDeleted) return
         val content = _content.value
         if (content.isBlank()) return
         if (content == originalContent && !isNewMemo) return
@@ -109,6 +116,10 @@ class MemoEditViewModel @Inject constructor(
     }
 
     fun saveAndSync(onComplete: () -> Unit) {
+        if (isDeleted) {
+            onComplete()
+            return
+        }
         val content = _content.value
         if (content.isBlank()) {
             onComplete()
@@ -143,6 +154,7 @@ class MemoEditViewModel @Inject constructor(
             onComplete()
             return
         }
+        isDeleted = true
         viewModelScope.launch {
             // Delete locally first, then return to the list immediately so the
             // memo visibly disappears. The remote trash move runs in the sync
