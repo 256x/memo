@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -70,8 +69,8 @@ class MemoEditViewModel @Inject constructor(
     init {
         if (fileName != null) {
             viewModelScope.launch {
-                val memo = memoRepository.observeAll().first().find { it.fileName == fileName }
-                memo?.let {
+                // Read the one file, rather than observing the whole pile for a single snapshot.
+                memoRepository.getByFileName(fileName)?.let {
                     _content.value = it.content
                     originalContent = it.content
                 }
