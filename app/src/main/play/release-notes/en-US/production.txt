@@ -1,4 +1,3 @@
-New: check off tasks straight from preview.
+Fix: a memo you edited and then deleted came back.
 
-- Tap a checkbox in preview mode to tick it off; checked items are struck through
-- Internal improvements to list refresh and sync error reporting
+- Deleting a memo from the detail screen no longer restores it when the screen closes
