@@ -66,6 +66,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import fumi.day.literalmemo.R
 import fumi.day.literalmemo.data.prefs.AppFont
+import fumi.day.literalmemo.domain.continueListOnNewline
 import fumi.day.literalmemo.ui.theme.LocalAppTheme
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
@@ -200,9 +201,10 @@ fun MemoEditScreen(
                 } else {
                     BasicTextField(
                         value = textFieldValue,
-                        onValueChange = {
-                            textFieldValue = it
-                            viewModel.updateContent(it.text)
+                        onValueChange = { newValue ->
+                            val updated = newValue.continuingList(textFieldValue)
+                            textFieldValue = updated
+                            viewModel.updateContent(updated.text)
                         },
                         modifier = Modifier
                             .fillMaxSize()
@@ -268,6 +270,22 @@ fun MemoEditScreen(
             }
         )
     }
+}
+
+/**
+ * Carries a list marker onto the line the user just opened with the enter key.
+ *
+ * Only a single typed newline qualifies — pastes, deletions and IME composition are handed back
+ * untouched, so nothing is inserted behind the user's back.
+ */
+private fun TextFieldValue.continuingList(previous: TextFieldValue): TextFieldValue {
+    val cursor = selection.start
+    if (!selection.collapsed) return this
+    if (text.length != previous.text.length + 1) return this
+    if (cursor <= 0 || text[cursor - 1] != '\n') return this
+
+    val continued = continueListOnNewline(text, cursor) ?: return this
+    return TextFieldValue(continued.text, TextRange(continued.cursor))
 }
 
 private fun applyToolbarAction(textFieldValue: TextFieldValue, action: ToolbarAction): TextFieldValue {
