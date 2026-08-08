@@ -1,3 +1,4 @@
-Fix: a memo you edited and then deleted came back.
+New: lists carry on to the next line.
 
-- Deleting a memo from the detail screen no longer restores it when the screen closes
+- Press enter after a list item and the next line starts with the same marker; ordered items count up, task boxes come back unchecked, and an empty item ends the list
+- Fixed a memo you edited and then deleted coming back to the list
