@@ -9,10 +9,10 @@ A minimalist text-based note app with Git sync.
 </p>
 
 <p>
-<img width="180" alt="List screen" src="./docs/play_store_assets/phone_01_list.png" />
-<img width="180" alt="Preview screen" src="./docs/play_store_assets/phone_03_preview_markdown.png" />
-<img width="180" alt="Edit screen" src="./docs/play_store_assets/phone_06_edit.png" />
-<img width="180" alt="setting screen" src="./docs/play_store_assets/phone_05_settings.png" />
+<img width="180" alt="List screen" src="./docs/screenshots/phone_01_list.png" />
+<img width="180" alt="Preview screen" src="./docs/screenshots/phone_03_preview_markdown.png" />
+<img width="180" alt="Edit screen" src="./docs/screenshots/phone_06_edit.png" />
+<img width="180" alt="setting screen" src="./docs/screenshots/phone_05_settings.png" />
 </p>
 
 [User Guide](./docs/USER_GUIDE.md)
