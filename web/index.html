@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiteralMemo Web</title>
+<style>
+:root {
+  --bg: #fafafa; --fg: #1c1b1f; --sub: #6b6b73; --line: #dcdce2;
+  --panel: #ffffff; --accent: #6650a4; --sel: #ece8f6; --danger: #b3261e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141316; --fg: #e6e1e6; --sub: #948f99; --line: #2f2d33;
+    --panel: #1c1b1f; --accent: #cfbcff; --sel: #2b2733; --danger: #f2b8b5;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 system-ui, "Noto Sans CJK JP", sans-serif; }
+button, input, textarea { font: inherit; color: inherit; }
+button {
+  background: none; border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 12px; cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.danger:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
+input[type=text], input[type=password] {
+  width: 100%; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 10px;
+}
+#app { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+aside { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.bar { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--line); }
+#list { overflow-y: auto; flex: 1; }
+.item { padding: 8px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.item:hover { background: var(--sel); }
+.item.sel { background: var(--sel); box-shadow: inset 3px 0 var(--accent); }
+.item .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .d { color: var(--sub); font-size: 12px; }
+main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.tools { display: flex; align-items: center; gap: 6px; padding: 10px; border-bottom: 1px solid var(--line); }
+.tools .name { color: var(--sub); font-size: 12px; margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#status { color: var(--sub); font-size: 12px; }
+#status.err { color: var(--danger); }
+#editor {
+  flex: 1; width: 100%; resize: none; border: 0; outline: 0; padding: 16px;
+  background: var(--panel); font: 14px/1.7 ui-monospace, "Noto Sans Mono CJK JP", monospace; tab-size: 4;
+}
+#preview { flex: 1; overflow-y: auto; padding: 16px 24px; background: var(--panel); }
+#preview :is(pre, code) { background: var(--sel); border-radius: 4px; }
+#preview code { padding: 1px 4px; }
+#preview pre { padding: 10px; overflow-x: auto; }
+#preview pre code { padding: 0; }
+#preview blockquote { margin-left: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--sub); }
+#preview table { border-collapse: collapse; }
+#preview :is(th, td) { border: 1px solid var(--line); padding: 4px 8px; }
+#preview li.task { list-style: none; margin-left: -1.2em; }
+.empty { margin: auto; color: var(--sub); }
+dialog { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; width: min(440px, 92vw); }
+dialog::backdrop { background: rgba(0,0,0,.5); }
+dialog label { display: block; margin: 10px 0 4px; font-size: 13px; color: var(--sub); }
+dialog .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+dialog p { font-size: 12px; color: var(--sub); }
+[hidden] { display: none !important; }
+@media (max-width: 720px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 40% 1fr; }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <div class="bar">
+      <input type="text" id="q" placeholder="検索  ( / )">
+      <button id="new" title="新規 (Ctrl+N)">＋</button>
+    </div>
+    <div id="list"></div>
+    <div class="bar" style="border-top:1px solid var(--line);border-bottom:0">
+      <button id="reload">再読込</button>
+      <button id="cfg">設定</button>
+    </div>
+  </aside>
+  <main>
+    <div class="tools" id="tools" hidden>
+      <span class="name" id="fname"></span>
+      <span id="status"></span>
+      <button id="toggle">プレビュー</button>
+      <button id="save" disabled>保存</button>
+      <button id="del" class="danger">削除</button>
+    </div>
+    <div class="empty" id="empty">メモを選択</div>
+    <textarea id="editor" spellcheck="false" hidden></textarea>
+    <div id="preview" hidden></div>
+  </main>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" id="dform">
+    <label for="repo">リポジトリ (owner/name)</label>
+    <input type="text" id="repo" placeholder="256x/literalmemo" autocomplete="off">
+    <label for="token">アクセストークン (Contents: Read and write)</label>
+    <input type="password" id="token" autocomplete="off">
+    <p>トークンはこのブラウザの localStorage にのみ保存。fine-grained PAT を当該リポジトリ限定で発行推奨。</p>
+    <div class="row">
+      <button type="button" id="dcancel">閉じる</button>
+      <button type="submit" id="dok">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const API = "https://api.github.com";
+
+// ---- state ----
+const store = {
+  get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+let cfg = { repo: store.get("repo"), token: store.get("token") };
+let memos = new Map();   // name -> {sha, content}
+let cur = null;          // {name, sha, isNew}
+let dirty = false;
+let previewing = false;
+
+// ---- GitHub API ----
+async function gh(method, path, body) {
+  const res = await fetch(`${API}/repos/${cfg.repo}/contents/${path}`, {
+    method,
+    headers: {
+      "Authorization": `Bearer ${cfg.token}`,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: "no-store",
+  });
+  const text = await res.text();
+  let json = null;
+  try { json = JSON.parse(text); } catch {}
+  return { status: res.status, json, text };
+}
+const enc = s => { const b = new TextEncoder().encode(s); let r = ""; for (const x of b) r += String.fromCharCode(x); return btoa(r); };
+const dec = s => Uint8Array.from(atob(s.replace(/\n/g, "")), c => c.charCodeAt(0));
+const decode = s => new TextDecoder().decode(dec(s));
+
+// ---- helpers ----
+function setStatus(msg, err = false) {
+  const s = $("status"); s.textContent = msg; s.className = err ? "err" : "";
+}
+function title(content, name) {
+  for (const l of content.split("\n")) {
+    const t = l.replace(/^\s*#+\s*/, "").trim();
+    if (t) return t;
+  }
+  return name.replace(/\.md$/, "");
+}
+function stamp(name) {
+  const m = name.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}` : "";
+}
+function newName() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.md`;
+}
+function confirmDiscard() {
+  return !dirty || confirm("未保存の変更を破棄?");
+}
+
+// ---- load ----
+async function loadAll() {
+  if (!cfg.repo || !cfg.token) { openCfg(); return; }
+  setStatus("読込中…");
+  const r = await gh("GET", "pile");
+  if (r.status === 404) {
+    memos = new Map(); render();
+    setStatus("pile/ が見つからない: リポジトリ名・トークン権限を確認", true);
+    return;
+  }
+  if (r.status !== 200) { setStatus(`一覧取得失敗: ${r.status}`, true); return; }
+  const remote = r.json.filter(f => f.name.endsWith(".md"));
+  const next = new Map();
+  const todo = [];
+  for (const f of remote) {
+    const old = memos.get(f.name);
+    if (old && old.sha === f.sha) next.set(f.name, old);
+    else todo.push(f);
+  }
+  let idx = 0, fail = 0;
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (idx < todo.length) {
+      const f = todo[idx++];
+      const g = await gh("GET", f.path);
+      if (g.status === 200) next.set(f.name, { sha: g.json.sha, content: decode(g.json.content) });
+      else fail++;
+    }
+  }));
+  memos = next;
+  render();
+  setStatus(fail ? `${fail}件取得失敗` : `${memos.size}件`, fail > 0);
+}
+
+// ---- list ----
+function render() {
+  const q = $("q").value.trim().toLowerCase();
+  const names = [...memos.keys()].sort().reverse()
+    .filter(n => !q || memos.get(n).content.toLowerCase().includes(q));
+  const list = $("list");
+  list.textContent = "";
+  for (const n of names) {
+    const el = document.createElement("div");
+    el.className = "item" + (cur && cur.name === n ? " sel" : "");
+    const t = document.createElement("div"); t.className = "t"; t.textContent = title(memos.get(n).content, n);
+    const d = document.createElement("div"); d.className = "d"; d.textContent = stamp(n);
+    el.append(t, d);
+    el.onclick = () => open(n);
+    list.append(el);
+  }
+}
+
+// ---- editor ----
+function showPane() {
+  const has = !!cur;
+  $("empty").hidden = has;
+  $("tools").hidden = !has;
+  $("editor").hidden = !has || previewing;
+  $("preview").hidden = !has || !previewing;
+  $("toggle").textContent = previewing ? "編集" : "プレビュー";
+  $("fname").textContent = cur ? cur.name : "";
+  $("save").disabled = !dirty;
+}
+function open(name) {
+  if (!confirmDiscard()) return;
+  const m = memos.get(name);
+  cur = { name, sha: m.sha, isNew: false };
+  $("editor").value = m.content;
+  dirty = false; previewing = false;
+  setStatus("");
+  showPane(); render();
+}
+function create() {
+  if (!confirmDiscard()) return;
+  cur = { name: newName(), sha: null, isNew: true };
+  $("editor").value = "# ";
+  dirty = false; previewing = false;
+  setStatus("");
+  showPane(); render();
+  const e = $("editor"); e.focus(); e.setSelectionRange(2, 2);
+}
+function renderPreview() {
+  const html = marked.parse($("editor").value, { gfm: true, breaks: true });
+  const box = $("preview");
+  box.innerHTML = DOMPurify.sanitize(html);
+  box.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.disabled = true;
+    cb.closest("li")?.classList.add("task");
+  });
+}
+async function save() {
+  if (!cur || !dirty) return;
+  const content = $("editor").value;
+  $("save").disabled = true;
+  setStatus("保存中…");
+  const r = await gh("PUT", `pile/${cur.name}`, {
+    message: `${cur.isNew ? "Add" : "Update"} ${cur.name}`,
+    content: enc(content),
+    ...(cur.sha ? { sha: cur.sha } : {}),
+  });
+  if (r.status === 200 || r.status === 201) {
+    cur.sha = r.json.content.sha; cur.isNew = false;
+    memos.set(cur.name, { sha: cur.sha, content });
+    dirty = false;
+    setStatus("保存済");
+    showPane(); render();
+  } else if (r.status === 409 || r.status === 422) {
+    $("save").disabled = false;
+    setStatus("競合: 端末側で更新済み。再読込して内容を確認", true);
+  } else {
+    $("save").disabled = false;
+    setStatus(`保存失敗: ${r.status}`, true);
+  }
+}
+async function remove() {
+  if (!cur) return;
+  if (cur.isNew) { cur = null; dirty = false; showPane(); render(); return; }
+  if (!confirm(`削除 (trash へ移動)?\n${title($("editor").value, cur.name)}`)) return;
+  setStatus("削除中…");
+  const content = memos.get(cur.name).content;
+  let r = await gh("PUT", `trash/${cur.name}`, { message: `Trash: ${cur.name}`, content: enc(content) });
+  if (r.status === 422) { // already in trash: overwrite
+    const ex = await gh("GET", `trash/${cur.name}`);
+    if (ex.status === 200) r = await gh("PUT", `trash/${cur.name}`, { message: `Trash: ${cur.name}`, content: enc(content), sha: ex.json.sha });
+  }
+  if (r.status !== 200 && r.status !== 201) { setStatus(`trash 失敗: ${r.status}`, true); return; }
+  const d = await gh("DELETE", `pile/${cur.name}`, { message: `Move to trash: ${cur.name}`, sha: cur.sha });
+  if (d.status !== 200) { setStatus(`削除失敗: ${d.status}`, true); return; }
+  memos.delete(cur.name);
+  cur = null; dirty = false;
+  setStatus("削除済");
+  showPane(); render();
+}
+
+// ---- settings ----
+function openCfg() {
+  $("repo").value = cfg.repo; $("token").value = cfg.token;
+  $("dlg").showModal();
+}
+$("dform").onsubmit = () => {
+  cfg = { repo: $("repo").value.trim(), token: $("token").value.trim() };
+  store.set("repo", cfg.repo); store.set("token", cfg.token);
+  memos = new Map();
+  loadAll();
+};
+$("dcancel").onclick = () => $("dlg").close();
+
+// ---- wiring ----
+$("cfg").onclick = openCfg;
+$("reload").onclick = () => { if (confirmDiscard()) { dirty = false; loadAll(); } };
+$("new").onclick = create;
+$("save").onclick = save;
+$("del").onclick = remove;
+$("q").oninput = render;
+$("toggle").onclick = () => {
+  previewing = !previewing;
+  if (previewing) renderPreview();
+  showPane();
+  if (!previewing) $("editor").focus();
+};
+$("editor").oninput = () => { dirty = true; $("save").disabled = false; setStatus("未保存"); };
+$("editor").addEventListener("keydown", e => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    document.execCommand("insertText", false, "    ");
+  }
+});
+addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); }
+  else if ((e.ctrlKey || e.metaKey) && e.key === "n") { e.preventDefault(); create(); }
+  else if (e.key === "/" && !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) { e.preventDefault(); $("q").focus(); }
+  else if (e.key === "Escape" && document.activeElement === $("q")) { $("q").value = ""; $("q").blur(); render(); }
+});
+addEventListener("beforeunload", e => { if (dirty) e.preventDefault(); });
+
+showPane();
+loadAll();
+</script>
+</body>
+</html>
