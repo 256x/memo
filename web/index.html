@@ -45,6 +45,8 @@ main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .tools .name { color: var(--sub); font-size: 12px; margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #status { color: var(--sub); font-size: 12px; }
 #status.err { color: var(--danger); }
+#fmt { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+#fmt button { padding: 2px 9px; font-size: 13px; min-width: 32px; }
 #editor {
   flex: 1; width: 100%; resize: none; border: 0; outline: 0; padding: 16px;
   background: var(--panel); font: 14px/1.7 ui-monospace, "Noto Sans Mono CJK JP", monospace; tab-size: 4;
@@ -92,6 +94,7 @@ dialog p { font-size: 12px; color: var(--sub); }
       <button id="save" disabled>保存</button>
       <button id="del" class="danger">削除</button>
     </div>
+    <div id="fmt" hidden></div>
     <div class="empty" id="empty">メモを選択</div>
     <textarea id="editor" spellcheck="false" hidden></textarea>
     <div id="preview" hidden></div>
@@ -231,6 +234,7 @@ function showPane() {
   const has = !!cur;
   $("empty").hidden = has;
   $("tools").hidden = !has;
+  $("fmt").hidden = !has || previewing;
   $("editor").hidden = !has || previewing;
   $("preview").hidden = !has || !previewing;
   $("toggle").textContent = previewing ? "編集" : "プレビュー";
@@ -335,12 +339,88 @@ $("toggle").onclick = () => {
   if (!previewing) $("editor").focus();
 };
 $("editor").oninput = () => { dirty = true; $("save").disabled = false; setStatus("未保存"); };
+// ---- markdown editing (mirrors the app's ListContinuation / MarkdownToolbar) ----
+const LIST_ITEM = /^([ \t]*)(?:([-*+])|(\d+)([.)]))([ \t]+)(\[[ xX]\][ \t]+)?(.*)$/;
+
+// Replace [from, to) through the browser so Ctrl+Z keeps working, then select [selA, selB].
+function replaceRange(from, to, text, selA, selB = selA) {
+  const e = $("editor");
+  e.focus();
+  e.setSelectionRange(from, to);
+  if (!document.execCommand("insertText", false, text)) {
+    e.setRangeText(text, from, to, "end");
+    e.dispatchEvent(new Event("input"));
+  }
+  e.setSelectionRange(selA, selB);
+}
+
+// Enter on a list item repeats the marker; Enter on an empty item leaves the list.
+function continueList(e) {
+  const ta = $("editor"), text = ta.value, cur = ta.selectionStart;
+  if (ta.selectionEnd !== cur) return false;
+  const lineStart = text.lastIndexOf("\n", cur - 1) + 1;
+  const m = LIST_ITEM.exec(text.slice(lineStart, cur));
+  if (!m) return false;
+  const [, indent, bullet, number, delim, spacing, box, content] = m;
+  if (!content.trim()) {
+    replaceRange(lineStart, cur, "", lineStart);
+    return true;
+  }
+  const marker = indent + (bullet || (Number(number) + 1) + delim) + spacing + (box ? "[ ] " : "");
+  replaceRange(cur, cur, "\n" + marker, cur + 1 + marker.length);
+  return true;
+}
+
+const FMT = [
+  ["B", "**", "**"], ["I", "_", "_"], ["S", "~~", "~~"],
+  ["H1", "# "], ["H2", "## "], ["H3", "### "],
+  ["List", "- "], ["1.", "1. "], ["[ ]", "- [ ] "], [">", "> "],
+  ["`", "`", "`"], ["```", "```\n", "\n```"], ["---", "---"], ["link", "[", "](url)"],
+];
+
+function applyFormat([label, prefix, suffix]) {
+  const ta = $("editor"), text = ta.value;
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const sel = text.slice(start, end);
+  if (suffix === undefined) { // line prefix
+    const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+    if (sel.includes("\n")) {
+      const effEnd = text[end - 1] === "\n" ? end - 1 : end;
+      const nl = text.indexOf("\n", effEnd);
+      const lineEnd = nl === -1 ? text.length : nl;
+      const lines = text.slice(lineStart, lineEnd).split("\n");
+      const block = lines.map((l, i) => (label === "1." ? `${i + 1}. ` : prefix) + l).join("\n");
+      replaceRange(lineStart, lineEnd, block, lineStart, lineStart + block.length);
+    } else {
+      replaceRange(lineStart, lineStart, prefix, start + prefix.length);
+    }
+  } else {
+    const pos = sel ? start + prefix.length + sel.length + suffix.length : start + prefix.length;
+    replaceRange(start, end, prefix + sel + suffix, pos);
+  }
+}
+
+FMT.forEach(f => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = f[0];
+  b.onmousedown = e => e.preventDefault(); // keep the selection in the textarea
+  b.onclick = () => applyFormat(f);
+  $("fmt").append(b);
+});
+
 $("editor").addEventListener("keydown", e => {
-  if (e.key === "Tab") {
+  if (e.isComposing || e.keyCode === 229) return; // IME conversion in progress
+  if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (continueList(e)) e.preventDefault();
+  } else if (e.key === "Tab") {
     e.preventDefault();
     document.execCommand("insertText", false, "    ");
+  } else if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "i")) {
+    e.preventDefault();
+    applyFormat(FMT[e.key === "b" ? 0 : 1]);
   }
 });
+
 addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); }
   else if ((e.ctrlKey || e.metaKey) && e.key === "n") { e.preventDefault(); create(); }
