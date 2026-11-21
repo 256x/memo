@@ -1,4 +1,1 @@
-New: lists carry on to the next line.
-
-- Press enter after a list item and the next line starts with the same marker; ordered items count up, task boxes come back unchecked, and an empty item ends the list
-- Fixed a memo you edited and then deleted coming back to the list
+Enlarged the launcher icon lettering to match the other Literal apps.
